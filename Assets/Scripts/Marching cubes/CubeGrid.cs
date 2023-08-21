@@ -47,6 +47,7 @@ public class CubeGrid : MonoBehaviour
 
     private void Start()
     {
+    
         if (populateGrid)
         {
             PopulateGrid(gridSizeX, gridSizeY, gridSizeZ, edgeLength);
