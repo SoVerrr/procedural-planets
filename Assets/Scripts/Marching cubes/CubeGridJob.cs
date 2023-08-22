@@ -16,17 +16,17 @@ public class CubeGridJob : MonoBehaviour
     [SerializeField] private bool populateGrid;
 
     [SerializeField] private float debugCubeSize;
-    private NativeArray<Vector3> gridPoints;
+    private NativeArray<Point> gridPoints;
     private JobHandle job;
     [BurstCompile]
     public struct CubeGridJobs : IJobParallelFor
     {
         [ReadOnly]private float edgeLen;
         private int gridSizeX, gridSizeY, gridSizeZ;
-        NativeArray<Vector3> gridPoints1;
+        NativeArray<Point> gridPoints1;
         
 
-        public CubeGridJobs(int gridX, int gridY, int gridZ, float edge, NativeArray<Vector3> arr)
+        public CubeGridJobs(int gridX, int gridY, int gridZ, float edge, NativeArray<Point> arr)
         {
             gridSizeX = gridX;
             gridSizeY = gridY;
@@ -47,20 +47,20 @@ public class CubeGridJob : MonoBehaviour
         public void Execute(int i)
         {
             Vector3Int indexes = CalculateIndexes(i);
-            gridPoints1[i] = new Vector3(indexes.x * edgeLen, indexes.y * edgeLen, indexes.z * edgeLen);
+            gridPoints1[i] = new Point(new Vector3(indexes.x * edgeLen, indexes.y * edgeLen, indexes.z * edgeLen));
 
         }
     }
     private void Start()
     {
-        gridPoints = new NativeArray<Vector3>(gridSizeX * gridSizeY * gridSizeZ, Allocator.Persistent);
+        gridPoints = new NativeArray<Point>(gridSizeX * gridSizeY * gridSizeZ, Allocator.Persistent);
         CubeGridJobs cubejob = new CubeGridJobs(gridSizeX, gridSizeY, gridSizeZ, edgeLength, gridPoints);
         job = cubejob.Schedule(gridSizeY * gridSizeX * gridSizeZ, 6400);
         
         job.Complete();
     }
 
-    public Vector3 AccessPoint(float x, float y, float z)
+    public Point AccessPointCoordinates(float x, float y, float z)
     {
         int zIndex = (int)Mathf.Round(z / edgeLength);
         int xIndex = (int)Mathf.Round(x / edgeLength);
@@ -69,15 +69,35 @@ public class CubeGridJob : MonoBehaviour
 
         return gridPoints[i];
     }
+    public Point AccessPointIndex(int x, int y, int z)
+    {
+        int i = (x * gridSizeY * gridSizeZ + y * gridSizeZ + z);
 
+        return gridPoints[i];
+    }
+    public Vector3Int PositionToIndex(Vector3 position)
+    {
+        int zIndex = (int)Mathf.Round(position.z / edgeLength);
+        int xIndex = (int)Mathf.Round(position.x / edgeLength);
+        int yIndex = (int)Mathf.Round(position.y / edgeLength);
+        return new Vector3Int(xIndex, yIndex, zIndex);
+    }
     private void OnDrawGizmos()
     {
         if (drawGrid && gridPoints != null)
         {
-            Gizmos.color = Color.green;
-            foreach (Vector3 point in gridPoints)
+            foreach (Point point in gridPoints)
             {
-                Gizmos.DrawCube(AccessPoint(point.x, point.y, point.z), new Vector3(debugCubeSize, debugCubeSize, debugCubeSize));
+                if (point.pointOn)
+                {
+                    Gizmos.color = Color.white;
+                    Gizmos.DrawCube(point.pointPosition, new Vector3(debugCubeSize, debugCubeSize, debugCubeSize));
+                }
+                else
+                {
+                    Gizmos.color = Color.black;
+                    Gizmos.DrawCube(point.pointPosition, new Vector3(debugCubeSize, debugCubeSize, debugCubeSize));
+                }
             }
         }
     }
