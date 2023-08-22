@@ -1,13 +1,18 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
+using Unity.Collections;
+using Unity.Jobs;
+using Unity.Burst;
 public class MarchingCubes : MonoBehaviour
 {
-    [SerializeField] private CubeGridJob grid;
+    [SerializeField] private CubeGridJob cubeGrid;
+    [SerializeField] Mesh mesh;
+    private NativeArray<Vector3> vertices;
+    private NativeArray<int> triangles;
+    JobHandle job;
 
-
-    private Vector3Int[] corners = new Vector3Int[8]
+    public static Vector3Int[] corners = new Vector3Int[8]
     {
         new Vector3Int(0, 0, 0),
         new Vector3Int(0, 0, 1),
@@ -18,7 +23,7 @@ public class MarchingCubes : MonoBehaviour
         new Vector3Int(1, 1, 1),
         new Vector3Int(1, 1, 0)
     };
-    private Vector2Int[] edges = new Vector2Int[12]
+    public static Vector2Int[] edges = new Vector2Int[12] 
     {
         new Vector2Int(0, 1),
         new Vector2Int(1, 2),
@@ -33,7 +38,7 @@ public class MarchingCubes : MonoBehaviour
         new Vector2Int(2, 6),
         new Vector2Int(3, 7)
     };
-    private int[,] triangulations = new int[256, 15]
+    private static int[,] triangulations = new int[256, 15]
     {
         {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 },
         { 0,  8,  3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 },
@@ -291,9 +296,8 @@ public class MarchingCubes : MonoBehaviour
         { 0,  9,  1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 },
         { 0,  3,  8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 },
         {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 }
-    };
-
-    private int[] GetTriangulation(Point cube)
+    }; //credit https://www.youtube.com/watch?v=KvwVYJY_IZ4
+    private int[] GetTriangulation(Point cube) //Takes the triangulation config index and returns from the triangulation array
     {
         int config_idx = GetTriangulationIndex(cube);
         int[] triangulation = new int[15];
@@ -306,19 +310,40 @@ public class MarchingCubes : MonoBehaviour
 
         return triangulation;
     }
-    private int GetTriangulationIndex(Point cube)
+    public int GetTriangulationIndex(Point cube) //If a corner is "active" it adds 2^i to the binary config index which corresponds to the index in the triangulation array
     {
         int config_idx = 0b00000000;
-        Vector3Int cube_idx = grid.PositionToIndex(cube.pointPosition);
-        for(int i = 0; i < corners.Length; i++)
+
+        Vector3Int cube_idx = cubeGrid.PositionToIndex(cube.pointPosition);
+        for (int i = 0; i < corners.Length; i++)
         {
             Vector3Int corner_idx = cube_idx + corners[i];
-            if (grid.AccessPointIndex(corner_idx.x, corner_idx.y, corner_idx.z).pointOn)
+            if (cubeGrid.AccessPointIndex(corner_idx.x, corner_idx.y, corner_idx.z).pointOn)
             {
                 config_idx += (int)Mathf.Pow(2, i);
             }
+            corner_idx -= corners[i];
         }
 
         return config_idx;
+    }
+
+    private void Start()
+    {
+        List<Vector3> vertices = new List<Vector3>();
+        List<int> triangulations = new List<int>();
+        Vector3Int gridSize = cubeGrid.GetGridSizes();
+        for(int x = 0; x < gridSize.x - 1; x++)
+        {
+            for(int y = 0; y < gridSize.y - 1; y++)
+            {
+                for(int z = 0; z < gridSize.z - 1; z++)
+                {
+                    
+                }
+            }
+        }
+        mesh.vertices = vertices.ToArray();
+        mesh.triangles = triangles.ToArray();
     }
 }
