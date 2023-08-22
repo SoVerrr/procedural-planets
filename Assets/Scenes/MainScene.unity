@@ -389,11 +389,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a4ec60ecfdd18d747bfec7352d6355d8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gridSizeX: 100
-  gridSizeY: 100
-  gridSizeZ: 100
-  edgeLength: 0.5
-  drawGrid: 0
+  gridSizeX: 4
+  gridSizeY: 7
+  gridSizeZ: 9
+  edgeLength: 0.4
+  drawGrid: 1
   populateGrid: 1
   debugCubeSize: 0.1
 --- !u!4 &1543875224

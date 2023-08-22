@@ -60,10 +60,13 @@ public class CubeGridJob : MonoBehaviour
         job.Complete();
     }
 
-    private Vector3 AccessPoint(float x, float y, float z)
+    public Vector3 AccessPoint(float x, float y, float z)
     {
-        int i = (int)(((x / edgeLength) * (gridSizeY * gridSizeZ)) + ((y / edgeLength) * gridSizeZ) + (z / edgeLength));
-        Debug.Log($"I: {i} x: {x} y: {y} z: {z} z/edgelen: {z / edgeLength} x/edgelen: {x / edgeLength} y/edgelen: {y / edgeLength}");
+        int zIndex = (int)Mathf.Round(z / edgeLength);
+        int xIndex = (int)Mathf.Round(x / edgeLength);
+        int yIndex = (int)Mathf.Round(y / edgeLength);
+        int i = (xIndex * gridSizeY * gridSizeZ + yIndex * gridSizeZ + zIndex);
+
         return gridPoints[i];
     }
 
@@ -71,11 +74,15 @@ public class CubeGridJob : MonoBehaviour
     {
         if (drawGrid && gridPoints != null)
         {
-            Gizmos.color = Color.red;
+            Gizmos.color = Color.green;
             foreach (Vector3 point in gridPoints)
             {
                 Gizmos.DrawCube(AccessPoint(point.x, point.y, point.z), new Vector3(debugCubeSize, debugCubeSize, debugCubeSize));
             }
         }
+    }
+    private void OnDestroy()
+    {
+        gridPoints.Dispose();
     }
 }
