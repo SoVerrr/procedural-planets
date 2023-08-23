@@ -7,7 +7,7 @@ using Unity.Burst;
 public class MarchingCubes : MonoBehaviour
 {
     [SerializeField] private CubeGridJob cubeGrid;
-    [SerializeField] Mesh mesh;
+    [SerializeField] MeshFilter meshFilter;
     private NativeArray<Vector3> vertices;
     private NativeArray<int> triangles;
     JobHandle job;
@@ -339,11 +339,30 @@ public class MarchingCubes : MonoBehaviour
             {
                 for(int z = 0; z < gridSize.z - 1; z++)
                 {
-                    
+                    Vector3 currentCube = cubeGrid.AccessPointIndex(x, y, z).pointPosition;
+                    for (int i = 0; i < corners.Length; i++)
+                    {
+                        Vector3 _ = currentCube + corners[i];
+                        vertices.Add(_);
+                        _ -= corners[i];
+                    }
+                    foreach (var item in GetTriangulation(cubeGrid.AccessPointIndex(x, y, z)))
+                    {
+                        
+                        if (item != -1)
+                        {
+                            triangulations.Add(item);
+                        }
+                    }
                 }
             }
         }
+        Mesh mesh = new Mesh();
+
         mesh.vertices = vertices.ToArray();
-        mesh.triangles = triangles.ToArray();
+        mesh.triangles = triangulations.ToArray();
+        mesh.RecalculateNormals();
+        meshFilter.mesh = mesh;
+
     }
 }

@@ -47,7 +47,7 @@ public class CubeGridJob : MonoBehaviour
         public void Execute(int i)
         {
             Vector3Int indexes = CalculateIndexes(i);
-            gridPoints1[i] = new Point(new Vector3(indexes.x * edgeLen, indexes.y * edgeLen, indexes.z * edgeLen));
+            gridPoints1[i] = new Point(new Vector3(indexes.x * edgeLen, indexes.y * edgeLen, indexes.z * edgeLen), i < 2);
 
         }
     }
