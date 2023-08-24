@@ -334,16 +334,8 @@ public class MarchingCubes : MonoBehaviour
         return edge;
     }
 
-    private void Start()
+    public void MarchCubes()
     {
-        /*for(int i = 0; i < cubeGrid.gridPoints.Length; i++) //Randomly assinging 0 or 1 to cube corners in order to generate a random mesh
-        {
-            if(Random.Range(0, 2) == 1)
-            {
-                cubeGrid.gridPoints[i] = new Point(cubeGrid.gridPoints[i].pointPosition, true);
-            }
-
-        }*/
         List<int> triangulations = new List<int>();
         Vector3Int gridSize = cubeGrid.GetGridSizes();
         int triang = 0;
@@ -373,7 +365,20 @@ public class MarchingCubes : MonoBehaviour
         mesh.triangles = triangulations.ToArray();
         mesh.RecalculateNormals();
         meshFilter.mesh = mesh;
+    }
 
+    private void Start()
+    {
+        /*for(int i = 0; i < cubeGrid.gridPoints.Length; i++) //Randomly assinging 0 or 1 to cube corners in order to generate a random mesh
+        {
+            if(Random.Range(0, 2) == 1)
+            {
+                cubeGrid.gridPoints[i] = new Point(cubeGrid.gridPoints[i].pointPosition, true);
+            }
+
+        }*/
+
+        MarchCubes();
     }
 }
 

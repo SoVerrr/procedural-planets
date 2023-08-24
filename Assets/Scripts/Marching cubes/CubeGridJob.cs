@@ -16,9 +16,11 @@ public class CubeGridJob : MonoBehaviour
     [SerializeField] private bool populateGrid;
     [SerializeField] int radius;
     [SerializeField] public float debugCubeSize;
+    [SerializeField] public float perlinRange;
     public NativeArray<Point> points;
     private JobHandle job;
     public Point[] gridPoints;
+    private float oldPerlin;
     [BurstCompile]
     public struct CubeGridJobs : IJobParallelFor
     {
@@ -67,6 +69,8 @@ public class CubeGridJob : MonoBehaviour
         SetGridToSphere(radius);
 
         points.Dispose();
+        oldPerlin = perlinRange;
+
     }
     public Vector3Int GetGridSizes()
     {
@@ -101,12 +105,15 @@ public class CubeGridJob : MonoBehaviour
         {
             if(Vector3.Distance(middlePoint, gridPoints[i].pointPosition) < radius)
             {
-                gridPoints[i].SetPointOn();
+                float perlin = PerlinNoise.Perlin3D(gridPoints[i].pointPosition);
+                //Debug.Log(perlin);
+
+                if (perlin > perlinRange)
+                {
+                    gridPoints[i].pointOn = true;
+                }
             }
         }
-    }
-    private void Update()
-    {
     }
     private void OnDrawGizmos()
     {
