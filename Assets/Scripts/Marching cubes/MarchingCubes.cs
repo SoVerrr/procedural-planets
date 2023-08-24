@@ -325,7 +325,7 @@ public class MarchingCubes : MonoBehaviour
 
         return config_idx;
     }
-    public Vector3 GetEdgeVector(Vector3 pointPoisition, Vector2Int edgeIndex)
+    public Vector3 GetEdgeVector(Vector3 pointPoisition, Vector2Int edgeIndex) //calculating the Vector3 in the middle of the edge of 2 given cube corners
     {
         Vector3 edge;
         Vector3 cornerA = new Vector3(corners[edgeIndex.x].x * cubeGrid.edgeLength, corners[edgeIndex.x].y * cubeGrid.edgeLength, corners[edgeIndex.x].z * cubeGrid.edgeLength);
@@ -336,7 +336,7 @@ public class MarchingCubes : MonoBehaviour
 
     private void Start()
     {
-        for(int i = 0; i < cubeGrid.gridPoints.Length; i++)
+        for(int i = 0; i < cubeGrid.gridPoints.Length; i++) //Randomly assinging 0 or 1 to cube corners in order to generate a random mesh
         {
             if(Random.Range(0, 2) == 1)
             {
@@ -347,16 +347,16 @@ public class MarchingCubes : MonoBehaviour
         List<int> triangulations = new List<int>();
         Vector3Int gridSize = cubeGrid.GetGridSizes();
         int triang = 0;
-        for (int x = 0; x < gridSize.x - 1; x++)
+        for (int x = 0; x < gridSize.x - 1; x++) //Iterating through the cube without going on outermost faces
         {
             for (int y = 0; y < gridSize.y - 1; y++)
             {
                 for (int z = 0; z < gridSize.z - 1; z++)
                 {
-                    int[] triangulation = GetTriangulation(cubeGrid.AccessPointIndex(x, y, z));
+                    int[] triangulation = GetTriangulation(cubeGrid.AccessPointIndex(x, y, z)); //Calculating triangulations
                     foreach (var item in triangulation)
                     {
-                        if (item != -1)
+                        if (item != -1) //If the triangulation is not -1 then the edge vertex with the index from triangulations goes into vertices array and is added to triangles 
                         {
                             vertices.Add(GetEdgeVector(cubeGrid.AccessPointIndex(x, y, z).pointPosition, edges[item]));
                             triangulations.Add(triang);
@@ -367,7 +367,7 @@ public class MarchingCubes : MonoBehaviour
             }
         }
         Mesh mesh = new Mesh();
-        mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+        mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32; //incrase the triangle limit from uint16 to uint32
 
         mesh.vertices = vertices.ToArray();
         mesh.triangles = triangulations.ToArray();
