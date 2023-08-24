@@ -16,8 +16,9 @@ public class CubeGridJob : MonoBehaviour
     [SerializeField] private bool populateGrid;
 
     [SerializeField] public float debugCubeSize;
-    public NativeArray<Point> gridPoints;
+    public NativeArray<Point> points;
     private JobHandle job;
+    public Point[] gridPoints;
     [BurstCompile]
     public struct CubeGridJobs : IJobParallelFor
     {
@@ -53,15 +54,17 @@ public class CubeGridJob : MonoBehaviour
     }
     private void Awake()
     {
-        gridPoints = new NativeArray<Point>(gridSizeX * gridSizeY * gridSizeZ, Allocator.Persistent);
-
+        points = new NativeArray<Point>(gridSizeX * gridSizeY * gridSizeZ, Allocator.Persistent);
+        gridPoints = new Point[gridSizeX * gridSizeY * gridSizeZ];
     }
     private void Start()
     {
-        CubeGridJobs cubejob = new CubeGridJobs(gridSizeX, gridSizeY, gridSizeZ, edgeLength, gridPoints);
+        CubeGridJobs cubejob = new CubeGridJobs(gridSizeX, gridSizeY, gridSizeZ, edgeLength, points);
         job = cubejob.Schedule(gridSizeY * gridSizeX * gridSizeZ, 6400);
         
         job.Complete();
+        points.CopyTo(gridPoints);
+        points.Dispose();
     }
     public Vector3Int GetGridSizes()
     {
@@ -107,9 +110,5 @@ public class CubeGridJob : MonoBehaviour
                 }
             }
         }
-    }
-    private void OnDestroy()
-    {
-        gridPoints.Dispose();
     }
 }
