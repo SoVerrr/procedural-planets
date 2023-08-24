@@ -14,7 +14,7 @@ public class CubeGridJob : MonoBehaviour
     [SerializeField] public float edgeLength;
     [SerializeField] public bool drawGrid;
     [SerializeField] private bool populateGrid;
-
+    [SerializeField] int radius;
     [SerializeField] public float debugCubeSize;
     public NativeArray<Point> points;
     private JobHandle job;
@@ -64,6 +64,8 @@ public class CubeGridJob : MonoBehaviour
         
         job.Complete();
         points.CopyTo(gridPoints);
+        SetGridToSphere(radius);
+
         points.Dispose();
     }
     public Vector3Int GetGridSizes()
@@ -91,6 +93,20 @@ public class CubeGridJob : MonoBehaviour
         int xIndex = (int)Mathf.Round(position.x / edgeLength);
         int yIndex = (int)Mathf.Round(position.y / edgeLength);
         return new Vector3Int(xIndex, yIndex, zIndex);
+    }
+    public void SetGridToSphere(int radius)
+    {
+        Vector3 middlePoint = AccessPointIndex(gridSizeX/2, gridSizeY/2, gridSizeZ/2).pointPosition;
+        for(int i = 0; i < gridPoints.Length; i++)
+        {
+            if(Vector3.Distance(middlePoint, gridPoints[i].pointPosition) < radius)
+            {
+                gridPoints[i].SetPointOn();
+            }
+        }
+    }
+    private void Update()
+    {
     }
     private void OnDrawGizmos()
     {

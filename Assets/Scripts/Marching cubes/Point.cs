@@ -23,4 +23,5 @@ public struct Point
         this.pointOn = true;
     }
 
+
 }

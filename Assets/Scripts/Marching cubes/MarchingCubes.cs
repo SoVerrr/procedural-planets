@@ -336,14 +336,14 @@ public class MarchingCubes : MonoBehaviour
 
     private void Start()
     {
-        for(int i = 0; i < cubeGrid.gridPoints.Length; i++) //Randomly assinging 0 or 1 to cube corners in order to generate a random mesh
+        /*for(int i = 0; i < cubeGrid.gridPoints.Length; i++) //Randomly assinging 0 or 1 to cube corners in order to generate a random mesh
         {
             if(Random.Range(0, 2) == 1)
             {
                 cubeGrid.gridPoints[i] = new Point(cubeGrid.gridPoints[i].pointPosition, true);
             }
 
-        }
+        }*/
         List<int> triangulations = new List<int>();
         Vector3Int gridSize = cubeGrid.GetGridSizes();
         int triang = 0;
@@ -368,7 +368,7 @@ public class MarchingCubes : MonoBehaviour
         }
         Mesh mesh = new Mesh();
         mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32; //incrase the triangle limit from uint16 to uint32
-
+        vertices.Reverse();
         mesh.vertices = vertices.ToArray();
         mesh.triangles = triangulations.ToArray();
         mesh.RecalculateNormals();
