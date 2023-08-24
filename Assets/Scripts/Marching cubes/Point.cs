@@ -10,6 +10,7 @@ public struct Point
     public Point(Vector3 position)
     {
         pointPosition = position;
+
         pointOn = false;
     }
     public Point(Vector3 position, bool value)
@@ -19,7 +20,7 @@ public struct Point
     }
     public void SetPointOn()
     {
-        pointOn = true;
+        this.pointOn = true;
     }
 
 }

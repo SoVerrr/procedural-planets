@@ -11,11 +11,11 @@ public class CubeGridJob : MonoBehaviour
     [SerializeField] private int gridSizeX;
     [SerializeField] private int gridSizeY;
     [SerializeField] private int gridSizeZ;
-    [SerializeField] private float edgeLength;
-    [SerializeField] private bool drawGrid;
+    [SerializeField] public float edgeLength;
+    [SerializeField] public bool drawGrid;
     [SerializeField] private bool populateGrid;
 
-    [SerializeField] private float debugCubeSize;
+    [SerializeField] public float debugCubeSize;
     public NativeArray<Point> gridPoints;
     private JobHandle job;
     [BurstCompile]
@@ -47,7 +47,7 @@ public class CubeGridJob : MonoBehaviour
         public void Execute(int i)
         {
             Vector3Int indexes = CalculateIndexes(i);
-            gridPoints1[i] = new Point(new Vector3(indexes.x * edgeLen, indexes.y * edgeLen, indexes.z * edgeLen), i < 2);
+            gridPoints1[i] = new Point(new Vector3(indexes.x * edgeLen, indexes.y * edgeLen, indexes.z * edgeLen));
 
         }
     }

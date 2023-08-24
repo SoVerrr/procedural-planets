@@ -8,10 +8,8 @@ public class MarchingCubes : MonoBehaviour
 {
     [SerializeField] private CubeGridJob cubeGrid;
     [SerializeField] MeshFilter meshFilter;
-    private NativeArray<Vector3> vertices;
-    private NativeArray<int> triangles;
     JobHandle job;
-
+    List<Vector3> vertices = new List<Vector3>();
     public static Vector3Int[] corners = new Vector3Int[8]
     {
         new Vector3Int(0, 0, 0),
@@ -23,7 +21,7 @@ public class MarchingCubes : MonoBehaviour
         new Vector3Int(1, 1, 1),
         new Vector3Int(1, 1, 0)
     };
-    public static Vector2Int[] edges = new Vector2Int[12] 
+    public static Vector2Int[] edges = new Vector2Int[12]
     {
         new Vector2Int(0, 1),
         new Vector2Int(1, 2),
@@ -327,31 +325,42 @@ public class MarchingCubes : MonoBehaviour
 
         return config_idx;
     }
+    public Vector3 GetEdgeVector(Vector3 pointPoisition, Vector2Int edgeIndex)
+    {
+        Vector3 edge;
+        Vector3 cornerA = new Vector3(corners[edgeIndex.x].x * cubeGrid.edgeLength, corners[edgeIndex.x].y * cubeGrid.edgeLength, corners[edgeIndex.x].z * cubeGrid.edgeLength);
+        Vector3 cornerB = new Vector3(corners[edgeIndex.y].x * cubeGrid.edgeLength, corners[edgeIndex.y].y * cubeGrid.edgeLength, corners[edgeIndex.y].z * cubeGrid.edgeLength);
+        edge = ((pointPoisition + cornerA) + (pointPoisition + cornerB)) / 2;
+        return edge;
+    }
 
     private void Start()
     {
-        List<Vector3> vertices = new List<Vector3>();
+        for(int i = 0; i < cubeGrid.gridPoints.Length; i++)
+        {
+            if(Random.Range(0, 2) == 1)
+            {
+                cubeGrid.gridPoints[i] = new Point(cubeGrid.gridPoints[i].pointPosition, true);
+            }
+
+        }
         List<int> triangulations = new List<int>();
         Vector3Int gridSize = cubeGrid.GetGridSizes();
-        for(int x = 0; x < gridSize.x - 1; x++)
+        int triang = 0;
+        for (int x = 0; x < gridSize.x - 1; x++)
         {
-            for(int y = 0; y < gridSize.y - 1; y++)
+            for (int y = 0; y < gridSize.y - 1; y++)
             {
-                for(int z = 0; z < gridSize.z - 1; z++)
+                for (int z = 0; z < gridSize.z - 1; z++)
                 {
-                    Vector3 currentCube = cubeGrid.AccessPointIndex(x, y, z).pointPosition;
-                    for (int i = 0; i < corners.Length; i++)
+                    int[] triangulation = GetTriangulation(cubeGrid.AccessPointIndex(x, y, z));
+                    foreach (var item in triangulation)
                     {
-                        Vector3 _ = currentCube + corners[i];
-                        vertices.Add(_);
-                        _ -= corners[i];
-                    }
-                    foreach (var item in GetTriangulation(cubeGrid.AccessPointIndex(x, y, z)))
-                    {
-                        
                         if (item != -1)
                         {
-                            triangulations.Add(item);
+                            vertices.Add(GetEdgeVector(cubeGrid.AccessPointIndex(x, y, z).pointPosition, edges[item]));
+                            triangulations.Add(triang);
+                            triang++;
                         }
                     }
                 }
@@ -366,3 +375,4 @@ public class MarchingCubes : MonoBehaviour
 
     }
 }
+
