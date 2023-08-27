@@ -340,15 +340,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a4ec60ecfdd18d747bfec7352d6355d8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gridSizeX: 100
-  gridSizeY: 100
-  gridSizeZ: 100
-  edgeLength: 0.25
+  gridSizeX: 200
+  gridSizeY: 200
+  gridSizeZ: 200
+  edgeLength: 1
   drawGrid: 0
   populateGrid: 1
-  radius: 10
+  radius: 40
   debugCubeSize: 0.1
-  perlinRange: 0
+  perlinRange: 0.45
+  perlinScale: 10.9
+  createSphere: 1
 --- !u!4 &1543875224
 Transform:
   m_ObjectHideFlags: 0

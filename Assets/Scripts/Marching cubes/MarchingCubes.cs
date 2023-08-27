@@ -367,44 +367,7 @@ public class MarchingCubes : MonoBehaviour
         mesh.RecalculateNormals();
         meshFilter.mesh = mesh;
     }
-    [BurstCompile]
-    public struct MarchingJob : IJob
-    {
-        private float3 pointPosistion;
-        private int edgeLength;
-        private float3[] corners;
-        private int2[] edges;
-        private int[] triangulation;
-
-        private NativeArray<float3> vertices;
-        private NativeArray<int> triangles;
-
-        public MarchingJob(float3 pointPosistion, int edgeLength, float3[] corners, int2[] edges, int[] triangulation, NativeArray<float3> vertices, NativeArray<int> triangles)
-        {
-            this.pointPosistion = pointPosistion;
-            this.edgeLength = edgeLength;
-            this.corners = corners;
-            this.edges = edges;
-            this.triangulation = triangulation;
-            this.vertices = vertices;
-            this.triangles = triangles;
-        }
-
-        public void Execute()
-        {
-            for(int i = 0; i < triangulation.Length; i++)
-            {
-                if (triangulation[i] != -1) 
-                {
-                    triangles[i] = i;
-                    float3 cornerA = new float3(corners[edges[triangulation[i]].x].x * edgeLength, corners[edges[triangulation[i]].x].y] * edgeLength, corners[edges[triangulation[i]].x].z * edgeLength);
-                    float3 cornerB = new float3();
-                    vertices[i] = new float3();
-                }
-            }
-
-        }
-    }
+    
 
 
     private void Start()
