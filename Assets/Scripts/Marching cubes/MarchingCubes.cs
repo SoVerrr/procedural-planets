@@ -368,20 +368,35 @@ public class MarchingCubes : MonoBehaviour
         meshFilter.mesh = mesh;
     }
     
+    public struct MarchJob : IJobParallelFor
+    {
+        NativeArray<int> triangles;
+        NativeArray<float3> vertices;
+        [ReadOnly] CubeGridJob grid;
+
+        public MarchJob(NativeArray<int> triangles, NativeArray<float3> vertices, CubeGridJob grid)
+        {
+            this.triangles = triangles;
+            this.vertices = vertices;
+            this.grid = grid;
+        }
+
+        public void Execute(int i)
+        {
+
+        }
+    }
+
+
+
 
 
     private void Start()
     {
-        /*for(int i = 0; i < cubeGrid.gridPoints.Length; i++) //Randomly assinging 0 or 1 to cube corners in order to generate a random mesh
-        {
-            if(Random.Range(0, 2) == 1)
-            {
-                cubeGrid.gridPoints[i] = new Point(cubeGrid.gridPoints[i].pointPosition, true);
-            }
-
-        }*/
-
         MarchCubes();
+    }
+    private void Update()
+    {
     }
 }
 

@@ -340,9 +340,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a4ec60ecfdd18d747bfec7352d6355d8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gridSizeX: 200
-  gridSizeY: 200
-  gridSizeZ: 200
+  gridSizeX: 30
+  gridSizeY: 30
+  gridSizeZ: 30
   edgeLength: 1
   drawGrid: 0
   populateGrid: 1

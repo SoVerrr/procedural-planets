@@ -11,6 +11,7 @@ public class CubeGridJob : MonoBehaviour
     [SerializeField] private int gridSizeX;
     [SerializeField] private int gridSizeY;
     [SerializeField] private int gridSizeZ;
+    [SerializeField] private int chunkAmount;
     [SerializeField] public float edgeLength;
     [SerializeField] public bool drawGrid;
     [SerializeField] private bool populateGrid;
@@ -22,12 +23,13 @@ public class CubeGridJob : MonoBehaviour
     public NativeArray<Point> points;
     private JobHandle job;
     public Point[] gridPoints;
+    private Chunk[] gridChunks;
     private float oldPerlin;
     private Vector3 middlePoint;
     [BurstCompile]
     public struct CubeGridJobs : IJobParallelFor
     {
-        [ReadOnly]private float edgeLen;
+        [ReadOnly] private float edgeLen;
         [ReadOnly] private float perlinScale;
         [ReadOnly] private float perlinRange;
         [ReadOnly] private float sphereRadius;
@@ -77,6 +79,7 @@ public class CubeGridJob : MonoBehaviour
         points = new NativeArray<Point>(gridSizeX * gridSizeY * gridSizeZ, Allocator.Persistent);
         gridPoints = new Point[gridSizeX * gridSizeY * gridSizeZ];
         middlePoint = new Vector3(gridSizeX * edgeLength /2, gridSizeY * edgeLength / 2, gridSizeZ * edgeLength / 2);
+        gridChunks = new Chunk[(gridSizeX * gridSizeY * gridSizeZ) / chunkAmount];
     }
     private void Start()
     {
@@ -87,10 +90,12 @@ public class CubeGridJob : MonoBehaviour
         job.Complete();
         points.CopyTo(gridPoints);
 
-        points.Dispose();
         oldPerlin = perlinRange;
 
     }
+
+
+
     public Vector3Int GetGridSizes()
     {
         return new Vector3Int(gridSizeX, gridSizeY, gridSizeZ);
