@@ -2,12 +2,12 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Chunk
+public struct Chunk
 {
     private int chunkWidth; //x
     private int chunkHeight; //y
     private int chunkDepth; //z
-    private Point[] chunkPoints;
+    public Point[] chunkPoints;
 
     public Chunk(int x, int y, int z) //width, height, depth
     {
