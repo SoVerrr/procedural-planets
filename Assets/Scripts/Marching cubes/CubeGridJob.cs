@@ -4,14 +4,16 @@ using UnityEngine;
 using Unity.Jobs;
 using Unity.Collections;
 using Unity.Burst;
-
+using Unity.Mathematics;
 
 public class CubeGridJob : MonoBehaviour
 {
     [SerializeField] private int gridSizeX;
     [SerializeField] private int gridSizeY;
     [SerializeField] private int gridSizeZ;
-    [SerializeField] private int chunkAmount;
+    [SerializeField] private int chunkSizeX;
+    [SerializeField] private int chunkSizeY;
+    [SerializeField] private int chunkSizeZ;
     [SerializeField] public float edgeLength;
     [SerializeField] public bool drawGrid;
     [SerializeField] private bool populateGrid;
@@ -25,6 +27,7 @@ public class CubeGridJob : MonoBehaviour
     private JobHandle job;
     public Point[] gridPoints;
     private Chunk[] gridChunks;
+    private int chunkAmount;
     private float oldPerlin;
     private Vector3 middlePoint;
     [BurstCompile]
@@ -102,14 +105,24 @@ public class CubeGridJob : MonoBehaviour
             result.x = (i / (chunkSizeY * chunkSizeZ)) % chunkSizeX;
             return result;
         }
+        private float3 CalculateStartPosition(int i)
+        {
+            float3 startPosition = new float3();
+
+            startPosition.z = i;
+            startPosition.y = (i / chunkSizeZ) % chunkSizeY;
+            startPosition.x = (i / (chunkSizeY * chunkSizeZ)) % chunkSizeX;
+
+            return startPosition;
+        }
 
         public void Execute()
         {
-
+            Vector3 startingPointPosition = new Vector3();
             for (int i = 0; i < chunkSizeX * chunkSizeY * chunkSizeZ; i++)
             {
                 Vector3Int indexes = CalculateIndexes(i);
-                Vector3 position = new Vector3(indexes.x * edgeLength * chunkID, indexes.y * edgeLength * chunkID, indexes.z * edgeLength * chunkID);
+                Vector3 position = new Vector3(indexes.x * edgeLength + startingPointPosition.x, indexes.y * edgeLength + startingPointPosition.y, indexes.z * edgeLength + startingPointPosition.z);
                 chunkPoints[i] = new Point(position);
             }
 
@@ -123,7 +136,8 @@ public class CubeGridJob : MonoBehaviour
 
     private void Awake()
     {
-        points = new NativeArray<Point>(gridSizeX / chunkAmount * gridSizeY / chunkAmount * gridSizeZ / chunkAmount, Allocator.Persistent);
+        chunkAmount = (gridSizeX * gridSizeY * gridSizeZ) / (chunkSizeX * chunkSizeY * chunkSizeZ);
+        points = new NativeArray<Point>(chunkSizeX * chunkSizeY * chunkSizeZ, Allocator.Persistent);
         //points = new NativeArray<Point>(gridSizeX * gridSizeY * gridSizeZ, Allocator.Persistent);
         gridPoints = new Point[gridSizeX * gridSizeY * gridSizeZ];
         middlePoint = new Vector3(gridSizeX * edgeLength /2, gridSizeY * edgeLength / 2, gridSizeZ * edgeLength / 2);
@@ -141,11 +155,11 @@ public class CubeGridJob : MonoBehaviour
         oldPerlin = perlinRange;*/
         for (int i = 1; i <= chunkAmount; i++)
         {
-            GenerateChunk chunkJob = new GenerateChunk(gridSizeX / chunkAmount, gridSizeY / chunkAmount, gridSizeZ / chunkAmount, edgeLength, i, points);
+            GenerateChunk chunkJob = new GenerateChunk(chunkSizeX, chunkSizeY, chunkSizeZ, edgeLength, i, points);
             job = chunkJob.Schedule();
             job.Complete();
 
-            gridChunks[i - 1] = new Chunk(gridSizeX / chunkAmount, gridSizeY / chunkAmount, gridSizeZ / chunkAmount);
+            gridChunks[i - 1] = new Chunk(chunkSizeX, chunkSizeY, chunkSizeZ);
             points.CopyTo(gridChunks[i - 1].chunkPoints);
 
         }
