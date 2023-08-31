@@ -339,10 +339,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a4ec60ecfdd18d747bfec7352d6355d8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gridSizeX: 10
-  gridSizeY: 10
-  gridSizeZ: 10
-  chunkAmount: 2
+  gridSizeX: 50
+  gridSizeY: 50
+  gridSizeZ: 50
+  chunkSizeX: 10
+  chunkSizeY: 10
+  chunkSizeZ: 10
   edgeLength: 1
   drawGrid: 0
   populateGrid: 1
