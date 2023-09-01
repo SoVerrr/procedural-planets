@@ -10,7 +10,10 @@ public class MarchingCubes : MonoBehaviour
     [SerializeField] private CubeGridJob cubeGrid;
     [SerializeField] MeshFilter meshFilter;
     JobHandle job;
-    List<Vector3> vertices = new List<Vector3>();
+    //List<Vector3> vertices = new List<Vector3>();
+    NativeArray<int> triangles;
+    NativeArray<Vector3> vertices;
+    GameObject meshObject;
     public static Vector3Int[] corners = new Vector3Int[8]
     {
         new Vector3Int(0, 0, 0),
@@ -335,7 +338,7 @@ public class MarchingCubes : MonoBehaviour
         return edge;
     }
 
-    public void MarchCubes()
+    /*public void MarchCubes()
     {
         List<int> triangulations = new List<int>();
         Vector3Int gridSize = cubeGrid.GetGridSizes();
@@ -366,34 +369,146 @@ public class MarchingCubes : MonoBehaviour
         mesh.triangles = triangulations.ToArray();
         mesh.RecalculateNormals();
         meshFilter.mesh = mesh;
-    }
-    
-    public struct MarchJob : IJobParallelFor
-    {
-        NativeArray<int> triangles;
-        NativeArray<float3> vertices;
-        [ReadOnly] CubeGridJob grid;
+    }*/
 
-        public MarchJob(NativeArray<int> triangles, NativeArray<float3> vertices, CubeGridJob grid)
+    public struct MarchChunks : IJob
+    {
+        CubeGridJob cubeGrid;
+        Chunk chunk;
+        int chunkSizeX;
+        int chunkSizeY;
+        int chunkSizeZ;
+        NativeArray<int> triangles;
+        NativeArray<Vector3> vertices;
+
+        private int[] GetTriangulation(Point cube) //Takes the triangulation config index and returns from the triangulation array
         {
+            int config_idx = GetTriangulationIndex(cube);
+            int[] triangulation = new int[15];
+
+
+            for (int i = 0; i < 15; i++)
+            {
+                triangulation[i] = triangulations[config_idx, i];
+            }
+
+            return triangulation;
+        }
+        public int GetTriangulationIndex(Point cube) //If a corner is "active" it adds 2^i to the binary config index which corresponds to the index in the triangulation array
+        {
+            int config_idx = 0b00000000;
+
+            Vector3Int cube_idx = cubeGrid.PositionToIndex(cube.pointPosition);
+            for (int i = 0; i < corners.Length; i++)
+            {
+                Vector3Int corner_idx = cube_idx + corners[i];
+                if (cubeGrid.AccessPointIndex(corner_idx.x, corner_idx.y, corner_idx.z).pointOn)
+                {
+                    config_idx += (int)Mathf.Pow(2, i);
+                }
+                corner_idx -= corners[i];
+            }
+
+            return config_idx;
+        }
+
+        public MarchChunks(CubeGridJob cubeGrid, Chunk chunk, int chunkSizeX, int chunkSizeY, int chunkSizeZ, NativeArray<int> triangles, NativeArray<Vector3> vertices)
+        {
+            this.cubeGrid = cubeGrid;
+            this.chunk = chunk;
+            this.chunkSizeX = chunkSizeX;
+            this.chunkSizeY = chunkSizeY;
+            this.chunkSizeZ = chunkSizeZ;
             this.triangles = triangles;
             this.vertices = vertices;
-            this.grid = grid;
         }
 
-        public void Execute(int i)
+        public Vector3 GetEdgeVector(Vector3 pointPoisition, Vector2Int edgeIndex) //calculating the Vector3 in the middle of the edge of 2 given cube corners
         {
+            Vector3 edge;
+            Vector3 cornerA = new Vector3(corners[edgeIndex.x].x * cubeGrid.edgeLength, corners[edgeIndex.x].y * cubeGrid.edgeLength, corners[edgeIndex.x].z * cubeGrid.edgeLength);
+            Vector3 cornerB = new Vector3(corners[edgeIndex.y].x * cubeGrid.edgeLength, corners[edgeIndex.y].y * cubeGrid.edgeLength, corners[edgeIndex.y].z * cubeGrid.edgeLength);
+            edge = ((pointPoisition + cornerA) + (pointPoisition + cornerB)) / 2;
+            return edge;
+        }
 
+        public void Execute()
+        {
+            int verticeCounter = 0;
+            int triangCounter = 0;
+            for(int x = 0; x < chunkSizeX; x++)
+            {
+                for(int y = 0; y < chunkSizeY; y++)
+                {
+                    for(int z = 0; z < chunkSizeZ; z++)
+                    {
+                        Point point = cubeGrid.AccesChunkIndex(chunk, x, y, z);
+                        int[] triangulation = GetTriangulation(point);
+                        foreach(int triang in triangulation)
+                        {
+                            if(triang != -1)
+                            {
+                                vertices[verticeCounter++] = GetEdgeVector(point.pointPosition, edges[triang]);
+                                triangles[triangCounter] = triangCounter++;
+                            }
+                            else //adding predefined values to arrays to "trim" them after the job is done
+                            {
+                                triangles[triangCounter++] = -1;
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
-
 
 
 
 
     private void Start()
     {
-        MarchCubes();
+        triangles = new NativeArray<int>(15, Allocator.Persistent);
+        vertices = new NativeArray<Vector3>(15, Allocator.Persistent);
+        for(int i = 0; i < cubeGrid.ChunkAmount; i++)
+        {
+            MarchChunks march = new MarchChunks(cubeGrid, cubeGrid.GetChunk[i], cubeGrid.ChunkSizeX, cubeGrid.ChunkSizeY, cubeGrid.ChunkSizeZ, triangles, vertices);
+            job = march.Schedule();
+
+           
+
+            job.Complete();
+
+            
+            List<Vector3> verticesList = new List<Vector3>();
+            List<int> triangleList = new List<int>();
+            for(int j = 0; j < 15; j++)
+            {
+
+                if (triangles[j] != -1)
+                {
+
+                    triangleList.Add(triangles[j]);
+                    verticesList.Add(vertices[j]);
+                }
+            }
+            if (triangleList.Count > 0)
+            {
+                Mesh mesh = new Mesh();
+                mesh.triangles = triangleList.ToArray();
+                mesh.vertices = verticesList.ToArray();
+
+                meshObject = new GameObject($"Chunk{i}");
+                meshObject.AddComponent<MeshFilter>();
+                meshObject.AddComponent<MeshRenderer>();
+
+                meshObject.GetComponent<MeshFilter>().mesh = mesh;
+                Instantiate(meshObject);
+                meshObject = null;
+            }
+        }
+        triangles.Dispose();
+        vertices.Dispose();
+
     }
     private void Update()
     {

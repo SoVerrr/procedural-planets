@@ -136,7 +136,7 @@ public class CubeGridJob : MonoBehaviour
             {
                 Vector3Int indexes = CalculateIndexes(i);
                 Vector3 position = new Vector3(indexes.x * edgeLength + startingPointPosition.x, indexes.y * edgeLength + startingPointPosition.y, indexes.z * edgeLength + startingPointPosition.z);
-                chunkPoints[i] = new Point(position);
+                chunkPoints[i] = new Point(position, i > 10);
             }
 
 
@@ -183,6 +183,29 @@ public class CubeGridJob : MonoBehaviour
     }
 
 
+    public int ChunkAmount
+    {
+        get { return chunkAmount; }
+    }
+    public Chunk[] GetChunk
+    {
+        get { return gridChunks; }
+    }
+    public int ChunkSizeX
+    {
+        get { return chunkSizeX; }
+    }
+
+    public int ChunkSizeY
+    {
+        get { return chunkSizeY; }
+    }
+
+    public int ChunkSizeZ
+    {
+        get { return chunkSizeZ; }
+    }
+
 
     public Vector3Int GetGridSizes()
     {
@@ -202,6 +225,12 @@ public class CubeGridJob : MonoBehaviour
         int i = (x * gridSizeY * gridSizeZ + y * gridSizeZ + z);
 
         return gridPoints[i];
+    }
+    public Point AccesChunkIndex(Chunk chunk, int x, int y, int z)
+    {
+        int i = (x * chunkSizeY * chunkSizeZ + y * chunkSizeZ + z);
+
+        return chunk.chunkPoints[i];
     }
     public Vector3Int PositionToIndex(Vector3 position)
     {
