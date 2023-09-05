@@ -370,21 +370,37 @@ public class MarchingCubes : MonoBehaviour
         mesh.RecalculateNormals();
         meshFilter.mesh = mesh;
     }*/
-
-    public struct MarchChunks : IJob
+    [BurstCompile]
+    public struct MarchChunks : IJobParallelFor
     {
-        NativeArray<Point> chunkPoints;
         int chunkSizeX;
         int chunkSizeY;
         int chunkSizeZ;
-        NativeArray<int> triangles;
-        NativeArray<Vector3> vertices;
+        int chunkAmountX;
+        int chunkAmountY;
+        int chunkAmountZ;
+        int chunkID;
+        [NativeDisableParallelForRestriction] NativeArray<int> triangles;
+        [NativeDisableParallelForRestriction] NativeArray<Vector3> vertices;
+        [NativeDisableParallelForRestriction] NativeArray<Point> chunkPoints;
+
         float edgeLength;
+        private Vector3 CalculateStartPosition(int i)
+        {
+            Vector3 startPosition = new Vector3();
+
+            startPosition.x = (i % chunkAmountX) * edgeLength * chunkSizeX;
+            startPosition.y = (Mathf.Floor((i / Mathf.Pow(chunkAmountY, 2))) % chunkAmountY) * edgeLength * chunkSizeZ;
+            startPosition.z = (Mathf.Floor((i / chunkAmountZ)) % chunkAmountZ) * edgeLength * chunkSizeZ;
+            return startPosition;
+        }
         public Vector3Int PositionToIndex(Vector3 position)
         {
-            int zIndex = (int)Mathf.Round(position.z / edgeLength);
-            int xIndex = (int)Mathf.Round(position.x / edgeLength);
-            int yIndex = (int)Mathf.Round(position.y / edgeLength);
+            Vector3 startPosition = CalculateStartPosition(chunkID);
+            int zIndex = (int)Mathf.Round((position.z / edgeLength) - startPosition.z);
+            int xIndex = (int)Mathf.Round((position.x / edgeLength) - startPosition.x);
+            int yIndex = (int)Mathf.Round((position.y / edgeLength) - startPosition.y);
+            //Debug.Log($"X: {xIndex}, Y: {yIndex} Z: {zIndex} | Position: {position} | StartPosition: {chunkPoints[0].pointPosition}");
             return new Vector3Int(xIndex, yIndex, zIndex);
         }
         public Point AccesChunkIndex(Chunk chunk, int x, int y, int z)
@@ -397,7 +413,7 @@ public class MarchingCubes : MonoBehaviour
         {
             int i = (x * chunkSizeX * chunkSizeY + y * chunkSizeZ + z);
 
-            return chunk.chunkPoints[i];
+            return chunkPoints[i];
         }
         private int[] GetTriangulation(Point cube) //Takes the triangulation config index and returns from the triangulation array
         {
@@ -412,6 +428,7 @@ public class MarchingCubes : MonoBehaviour
 
             return triangulation;
         }
+
         public int GetTriangulationIndex(Point cube) //If a corner is "active" it adds 2^i to the binary config index which corresponds to the index in the triangulation array
         {
             int config_idx = 0b00000000;
@@ -430,7 +447,8 @@ public class MarchingCubes : MonoBehaviour
             return config_idx;
         }
 
-        public MarchChunks(NativeArray<Point> chunkPoints, int chunkSizeX, int chunkSizeY, int chunkSizeZ, NativeArray<int> triangles, NativeArray<Vector3> vertices, float edgeLength)
+        public MarchChunks(NativeArray<Point> chunkPoints, int chunkSizeX, int chunkSizeY, int chunkSizeZ, NativeArray<int> triangles, NativeArray<Vector3> vertices, float edgeLength,
+            int chunkAmountX, int chunkAmountZ, int chunkAmountY, int chunkID)
         {
             this.chunkPoints = chunkPoints;
             this.chunkSizeX = chunkSizeX;
@@ -439,6 +457,10 @@ public class MarchingCubes : MonoBehaviour
             this.triangles = triangles;
             this.vertices = vertices;
             this.edgeLength = edgeLength;
+            this.chunkAmountX = chunkAmountX;
+            this.chunkAmountZ = chunkAmountZ;
+            this.chunkAmountY = chunkAmountY;
+            this.chunkID = chunkID;
         }
 
         public Vector3 GetEdgeVector(Vector3 pointPoisition, Vector2Int edgeIndex) //calculating the Vector3 in the middle of the edge of 2 given cube corners
@@ -450,20 +472,23 @@ public class MarchingCubes : MonoBehaviour
             return edge;
         }
 
-        public void Execute()
+        public void Execute(int i)
         {
             int verticeCounter = 0;
             int triangCounter = 0;
-            for(int x = 0; x < chunkSizeX; x++)
+            /*for(int x = 0; x < chunkSizeX; x++)
             {
                 for(int y = 0; y < chunkSizeY; y++)
                 {
                     for(int z = 0; z < chunkSizeZ; z++)
                     {
-                        Point point = AccesChunkIndex(chunk, x, y, z);
+                        //Debug.Log($"ITERATION: {x + y + z}");
+                        Point point = AccessPointIndex(x, y, z);
                         int[] triangulation = GetTriangulation(point);
+
                         foreach(int triang in triangulation)
                         {
+                            Debug.Log(triang);
                             if(triang != -1)
                             {
                                 vertices[verticeCounter++] = GetEdgeVector(point.pointPosition, edges[triang]);
@@ -476,7 +501,26 @@ public class MarchingCubes : MonoBehaviour
                         }
                     }
                 }
+            }*/
+            Point point = chunkPoints[i];
+            int[] triangulation = GetTriangulation(point);
+
+            foreach (int triang in triangulation)
+            {
+                Debug.Log($"TRIANG: {triangCounter} | vertice: {verticeCounter}");
+                if (triang != -1)
+                {
+
+                    vertices[verticeCounter++] = GetEdgeVector(point.pointPosition, edges[triang]);
+                    triangles[triangCounter] = triangCounter++;
+                }
+                else //adding predefined values to arrays to "trim" them after the job is done
+                {
+                    triangles[triangCounter++] = -1;
+                }
             }
+
+
         }
     }
 
@@ -489,14 +533,18 @@ public class MarchingCubes : MonoBehaviour
         vertices = new NativeArray<Vector3>(15, Allocator.Persistent);
         for(int i = 0; i < cubeGrid.ChunkAmount; i++)
         {
-            MarchChunks march = new MarchChunks(cubeGrid.GetChunk[i], cubeGrid.ChunkSizeX, cubeGrid.ChunkSizeY, cubeGrid.ChunkSizeZ, triangles, vertices, cubeGrid.edgeLength);
-            job = march.Schedule();
+            Debug.Log($"JOB: {i}");
+            NativeArray<Point> chunkPoints = new NativeArray<Point>(cubeGrid.ChunkSizeX * cubeGrid.ChunkSizeY * cubeGrid.ChunkSizeZ, Allocator.Persistent);
+            NativeArray<Point>.Copy(cubeGrid.GetChunk[i].chunkPoints, chunkPoints);
 
-           
+            MarchChunks march = new MarchChunks(chunkPoints, cubeGrid.ChunkSizeX, cubeGrid.ChunkSizeY, cubeGrid.ChunkSizeZ, triangles, vertices, cubeGrid.edgeLength,
+                cubeGrid.ChunkAmountX, cubeGrid.ChunkAmountY, cubeGrid.ChunkAmountZ, i);
 
+
+            job = march.Schedule((cubeGrid.ChunkSizeX * cubeGrid.ChunkSizeY * cubeGrid.ChunkSizeZ) - 1, 6400);
             job.Complete();
+            chunkPoints.Dispose();
 
-            
             List<Vector3> verticesList = new List<Vector3>();
             List<int> triangleList = new List<int>();
             for(int j = 0; j < 15; j++)
@@ -520,7 +568,7 @@ public class MarchingCubes : MonoBehaviour
                 meshObject.AddComponent<MeshRenderer>();
 
                 meshObject.GetComponent<MeshFilter>().mesh = mesh;
-                Instantiate(meshObject);
+                //Instantiate(meshObject);
                 meshObject = null;
             }
         }

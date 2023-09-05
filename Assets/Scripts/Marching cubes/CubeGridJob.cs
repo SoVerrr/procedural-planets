@@ -23,7 +23,6 @@ public class CubeGridJob : MonoBehaviour
     [SerializeField] public float perlinScale = 20.0f;
     [SerializeField] public bool createSphere;
     public NativeArray<Point> points;
-    private NativeArray<Chunk> chunks;
     private JobHandle job;
     public Point[] gridPoints;
     private Chunk[] gridChunks;
@@ -136,7 +135,7 @@ public class CubeGridJob : MonoBehaviour
             {
                 Vector3Int indexes = CalculateIndexes(i);
                 Vector3 position = new Vector3(indexes.x * edgeLength + startingPointPosition.x, indexes.y * edgeLength + startingPointPosition.y, indexes.z * edgeLength + startingPointPosition.z);
-                chunkPoints[i] = new Point(position, i > 10);
+                chunkPoints[i] = new Point(position, i <10);
             }
 
 
@@ -186,6 +185,18 @@ public class CubeGridJob : MonoBehaviour
     public int ChunkAmount
     {
         get { return chunkAmount; }
+    }
+    public int ChunkAmountX
+    {
+        get { return chunkAmountX; }
+    }
+    public int ChunkAmountY
+    {
+        get { return chunkAmountY; }
+    }
+    public int ChunkAmountZ
+    {
+        get { return chunkAmountZ; }
     }
     public Chunk[] GetChunk
     {
