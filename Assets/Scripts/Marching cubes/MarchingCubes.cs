@@ -373,14 +373,32 @@ public class MarchingCubes : MonoBehaviour
 
     public struct MarchChunks : IJob
     {
-        CubeGridJob cubeGrid;
-        Chunk chunk;
+        NativeArray<Point> chunkPoints;
         int chunkSizeX;
         int chunkSizeY;
         int chunkSizeZ;
         NativeArray<int> triangles;
         NativeArray<Vector3> vertices;
+        float edgeLength;
+        public Vector3Int PositionToIndex(Vector3 position)
+        {
+            int zIndex = (int)Mathf.Round(position.z / edgeLength);
+            int xIndex = (int)Mathf.Round(position.x / edgeLength);
+            int yIndex = (int)Mathf.Round(position.y / edgeLength);
+            return new Vector3Int(xIndex, yIndex, zIndex);
+        }
+        public Point AccesChunkIndex(Chunk chunk, int x, int y, int z)
+        {
+            int i = (x * chunkSizeY * chunkSizeZ + y * chunkSizeZ + z);
 
+            return chunk.chunkPoints[i];
+        }
+        public Point AccessPointIndex(int x, int y, int z)
+        {
+            int i = (x * chunkSizeX * chunkSizeY + y * chunkSizeZ + z);
+
+            return chunk.chunkPoints[i];
+        }
         private int[] GetTriangulation(Point cube) //Takes the triangulation config index and returns from the triangulation array
         {
             int config_idx = GetTriangulationIndex(cube);
@@ -398,11 +416,11 @@ public class MarchingCubes : MonoBehaviour
         {
             int config_idx = 0b00000000;
 
-            Vector3Int cube_idx = cubeGrid.PositionToIndex(cube.pointPosition);
+            Vector3Int cube_idx = PositionToIndex(cube.pointPosition);
             for (int i = 0; i < corners.Length; i++)
             {
                 Vector3Int corner_idx = cube_idx + corners[i];
-                if (cubeGrid.AccessPointIndex(corner_idx.x, corner_idx.y, corner_idx.z).pointOn)
+                if (AccessPointIndex(corner_idx.x, corner_idx.y, corner_idx.z).pointOn)
                 {
                     config_idx += (int)Mathf.Pow(2, i);
                 }
@@ -412,22 +430,22 @@ public class MarchingCubes : MonoBehaviour
             return config_idx;
         }
 
-        public MarchChunks(CubeGridJob cubeGrid, Chunk chunk, int chunkSizeX, int chunkSizeY, int chunkSizeZ, NativeArray<int> triangles, NativeArray<Vector3> vertices)
+        public MarchChunks(NativeArray<Point> chunkPoints, int chunkSizeX, int chunkSizeY, int chunkSizeZ, NativeArray<int> triangles, NativeArray<Vector3> vertices, float edgeLength)
         {
-            this.cubeGrid = cubeGrid;
-            this.chunk = chunk;
+            this.chunkPoints = chunkPoints;
             this.chunkSizeX = chunkSizeX;
             this.chunkSizeY = chunkSizeY;
             this.chunkSizeZ = chunkSizeZ;
             this.triangles = triangles;
             this.vertices = vertices;
+            this.edgeLength = edgeLength;
         }
 
         public Vector3 GetEdgeVector(Vector3 pointPoisition, Vector2Int edgeIndex) //calculating the Vector3 in the middle of the edge of 2 given cube corners
         {
             Vector3 edge;
-            Vector3 cornerA = new Vector3(corners[edgeIndex.x].x * cubeGrid.edgeLength, corners[edgeIndex.x].y * cubeGrid.edgeLength, corners[edgeIndex.x].z * cubeGrid.edgeLength);
-            Vector3 cornerB = new Vector3(corners[edgeIndex.y].x * cubeGrid.edgeLength, corners[edgeIndex.y].y * cubeGrid.edgeLength, corners[edgeIndex.y].z * cubeGrid.edgeLength);
+            Vector3 cornerA = new Vector3(corners[edgeIndex.x].x * edgeLength, corners[edgeIndex.x].y * edgeLength, corners[edgeIndex.x].z * edgeLength);
+            Vector3 cornerB = new Vector3(corners[edgeIndex.y].x * edgeLength, corners[edgeIndex.y].y * edgeLength, corners[edgeIndex.y].z * edgeLength);
             edge = ((pointPoisition + cornerA) + (pointPoisition + cornerB)) / 2;
             return edge;
         }
@@ -442,7 +460,7 @@ public class MarchingCubes : MonoBehaviour
                 {
                     for(int z = 0; z < chunkSizeZ; z++)
                     {
-                        Point point = cubeGrid.AccesChunkIndex(chunk, x, y, z);
+                        Point point = AccesChunkIndex(chunk, x, y, z);
                         int[] triangulation = GetTriangulation(point);
                         foreach(int triang in triangulation)
                         {
@@ -471,7 +489,7 @@ public class MarchingCubes : MonoBehaviour
         vertices = new NativeArray<Vector3>(15, Allocator.Persistent);
         for(int i = 0; i < cubeGrid.ChunkAmount; i++)
         {
-            MarchChunks march = new MarchChunks(cubeGrid, cubeGrid.GetChunk[i], cubeGrid.ChunkSizeX, cubeGrid.ChunkSizeY, cubeGrid.ChunkSizeZ, triangles, vertices);
+            MarchChunks march = new MarchChunks(cubeGrid.GetChunk[i], cubeGrid.ChunkSizeX, cubeGrid.ChunkSizeY, cubeGrid.ChunkSizeZ, triangles, vertices, cubeGrid.edgeLength);
             job = march.Schedule();
 
            
