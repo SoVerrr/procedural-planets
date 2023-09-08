@@ -587,9 +587,9 @@ public class MarchingCubes : MonoBehaviour
                 Mesh mesh = new()
                 {
                     vertices = verticesList.ToArray(),
+                    indexFormat = UnityEngine.Rendering.IndexFormat.UInt32,
                     triangles = triangleList.ToArray()
                 };
-                mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32; //incrase the triangle limit from uint16 to uint32
 
                 /*mesh.triangles = triangleList.ToArray();
                 mesh.vertices = verticesList.ToArray();*/
