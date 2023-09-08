@@ -510,8 +510,6 @@ public class MarchingCubes : MonoBehaviour
 
     private void Start()
     {
-        triangles = new NativeArray<int>(15 * cubeGrid.ChunkSizeX * cubeGrid.ChunkSizeY * cubeGrid.ChunkSizeZ, Allocator.Persistent);
-        vertices = new NativeArray<Vector3>(15 * cubeGrid.ChunkSizeX * cubeGrid.ChunkSizeY * cubeGrid.ChunkSizeZ, Allocator.Persistent);
         nativeTriangulations = new NativeArray<int>(256 * 16, Allocator.Persistent);
         nativeCorners = new NativeArray<Vector3Int>(corners.Length, Allocator.Persistent);
         nativeEdges = new NativeArray<Vector2Int>(edges.Length, Allocator.Persistent);
@@ -532,10 +530,16 @@ public class MarchingCubes : MonoBehaviour
         NativeArray<int> verticeCount = new NativeArray<int>(1, Allocator.Persistent);
         for (int i = 0; i < cubeGrid.ChunkAmount; i++)
         {
+            triangles = new NativeArray<int>(15 * cubeGrid.ChunkSizeX * cubeGrid.ChunkSizeY * cubeGrid.ChunkSizeZ, Allocator.Persistent);
+            vertices = new NativeArray<Vector3>(15 * cubeGrid.ChunkSizeX * cubeGrid.ChunkSizeY * cubeGrid.ChunkSizeZ, Allocator.Persistent);
             NativeArray<Point> chunkPoints = new NativeArray<Point>(cubeGrid.ChunkSizeX * cubeGrid.ChunkSizeY * cubeGrid.ChunkSizeZ, Allocator.Persistent);
             NativeArray<Point>.Copy(cubeGrid.GetChunk[i].chunkPoints, chunkPoints);
             /* MarchChunks march = new MarchChunks(chunkPoints, cubeGrid.ChunkSizeX, cubeGrid.ChunkSizeY, cubeGrid.ChunkSizeZ, triangles, vertices, cubeGrid.edgeLength,
                  cubeGrid.ChunkAmountX, cubeGrid.ChunkAmountY, cubeGrid.ChunkAmountZ, i, nativeTriangulations, nativeCorners, nativeEdges, verticeCount, triangCount);*/
+
+            triangCount[0] = 0;
+            verticeCount[0] = 0;
+
             var march = new MarchChunks()
             {
                 chunkPoints = chunkPoints,
@@ -564,11 +568,11 @@ public class MarchingCubes : MonoBehaviour
 
             List<Vector3> verticesList = new List<Vector3>();
             List<int> triangleList = new List<int>();
-            for (int j = 0; j < 15; j++)
+            for (int j = 0; j < 15 * cubeGrid.ChunkSizeX * cubeGrid.ChunkSizeY * cubeGrid.ChunkSizeZ; j++)
             {
                 if (triangles[j] != -1)
                 {
-                    triangleList.Add(triangles[j]);
+                    triangleList.Add(j);
                     verticesList.Add(vertices[j]);
                 }
             }
@@ -587,9 +591,10 @@ public class MarchingCubes : MonoBehaviour
                 //Instantiate(meshObject);
                 meshObject = null;
             }
+            vertices.Dispose();
+            triangles.Dispose();
+
         }
-        triangles.Dispose();
-        vertices.Dispose();
 
     }
     private void Update()
