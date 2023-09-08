@@ -13,6 +13,9 @@ public class MarchingCubes : MonoBehaviour
     //List<Vector3> vertices = new List<Vector3>();
     NativeArray<int> triangles;
     NativeArray<Vector3> vertices;
+    NativeArray<int> nativeTriangulations;
+    NativeArray<Vector3Int> nativeCorners;
+    NativeArray<Vector2Int> nativeEdges;
     GameObject meshObject;
     public static Vector3Int[] corners = new Vector3Int[8]
     {
@@ -373,18 +376,23 @@ public class MarchingCubes : MonoBehaviour
     [BurstCompile]
     public struct MarchChunks : IJobParallelFor
     {
-        int chunkSizeX;
-        int chunkSizeY;
-        int chunkSizeZ;
-        int chunkAmountX;
-        int chunkAmountY;
-        int chunkAmountZ;
-        int chunkID;
-        [NativeDisableParallelForRestriction] NativeArray<int> triangles;
-        [NativeDisableParallelForRestriction] NativeArray<Vector3> vertices;
-        [NativeDisableParallelForRestriction] NativeArray<Point> chunkPoints;
+        public int chunkSizeX;
+        public int chunkSizeY;
+        public int chunkSizeZ;
+        public int chunkAmountX;
+        public int chunkAmountY;
+        public int chunkAmountZ;
+        public int chunkID;
+        public NativeArray<int> triangulations;
+        public NativeArray<Vector3Int> corners;
+        public NativeArray<Vector2Int> edges;
+        public NativeArray<int> verticeCounter;
+        public NativeArray<int> triangleCounter;
+        [NativeDisableParallelForRestriction] public NativeArray<int> triangles;
+        [NativeDisableParallelForRestriction] public NativeArray<Vector3> vertices;
+        [NativeDisableParallelForRestriction] public NativeArray<Point> chunkPoints;
 
-        float edgeLength;
+        public float edgeLength;
         private Vector3 CalculateStartPosition(int i)
         {
             Vector3 startPosition = new Vector3();
@@ -400,30 +408,25 @@ public class MarchingCubes : MonoBehaviour
             int zIndex = (int)Mathf.Round((position.z / edgeLength) - startPosition.z);
             int xIndex = (int)Mathf.Round((position.x / edgeLength) - startPosition.x);
             int yIndex = (int)Mathf.Round((position.y / edgeLength) - startPosition.y);
-            //Debug.Log($"X: {xIndex}, Y: {yIndex} Z: {zIndex} | Position: {position} | StartPosition: {chunkPoints[0].pointPosition}");
-            return new Vector3Int(xIndex, yIndex, zIndex);
-        }
-        public Point AccesChunkIndex(Chunk chunk, int x, int y, int z)
-        {
-            int i = (x * chunkSizeY * chunkSizeZ + y * chunkSizeZ + z);
 
-            return chunk.chunkPoints[i];
+            
+            return new Vector3Int(xIndex, yIndex, zIndex);
         }
         public Point AccessPointIndex(int x, int y, int z)
         {
             int i = (x * chunkSizeX * chunkSizeY + y * chunkSizeZ + z);
-
             return chunkPoints[i];
         }
-        private int[] GetTriangulation(Point cube) //Takes the triangulation config index and returns from the triangulation array
+        
+        private NativeArray<int> GetTriangulation(Point cube) //Takes the triangulation config index and returns from the triangulation array
         {
-            int config_idx = GetTriangulationIndex(cube);
-            int[] triangulation = new int[15];
+            int config_idx = GetTriangulationIndex(cube) * 15;
+            NativeArray<int> triangulation = new NativeArray<int>(15, Allocator.Temp);
 
 
             for (int i = 0; i < 15; i++)
             {
-                triangulation[i] = triangulations[config_idx, i];
+                triangulation[i] = triangulations[config_idx + i];
             }
 
             return triangulation;
@@ -447,8 +450,9 @@ public class MarchingCubes : MonoBehaviour
             return config_idx;
         }
 
-        public MarchChunks(NativeArray<Point> chunkPoints, int chunkSizeX, int chunkSizeY, int chunkSizeZ, NativeArray<int> triangles, NativeArray<Vector3> vertices, float edgeLength,
-            int chunkAmountX, int chunkAmountZ, int chunkAmountY, int chunkID)
+        /*public MarchChunks(NativeArray<Point> chunkPoints, int chunkSizeX, int chunkSizeY, int chunkSizeZ, NativeArray<int> triangles, NativeArray<Vector3> vertices, float edgeLength,
+            int chunkAmountX, int chunkAmountZ, int chunkAmountY, int chunkID, NativeArray<int> triangulations, NativeArray<Vector3Int> corners, NativeArray<Vector2Int> edges,
+            NativeArray<int> verticeCounter, NativeArray<int> triangleCounter)
         {
             this.chunkPoints = chunkPoints;
             this.chunkSizeX = chunkSizeX;
@@ -461,7 +465,12 @@ public class MarchingCubes : MonoBehaviour
             this.chunkAmountZ = chunkAmountZ;
             this.chunkAmountY = chunkAmountY;
             this.chunkID = chunkID;
-        }
+            this.triangulations = triangulations;
+            this.corners = corners;
+            this.edges = edges;
+            this.verticeCounter = verticeCounter;
+            this.triangleCounter = triangleCounter;
+        }*/
 
         public Vector3 GetEdgeVector(Vector3 pointPoisition, Vector2Int edgeIndex) //calculating the Vector3 in the middle of the edge of 2 given cube corners
         {
@@ -474,89 +483,96 @@ public class MarchingCubes : MonoBehaviour
 
         public void Execute(int i)
         {
-            int verticeCounter = 0;
-            int triangCounter = 0;
-            /*for(int x = 0; x < chunkSizeX; x++)
+            Point point = chunkPoints[i];
+            Vector3Int pointIndex = PositionToIndex(point.pointPosition);
+            if (pointIndex.x < chunkSizeX - 1 && pointIndex.y < chunkSizeY - 1 && pointIndex.z < chunkSizeZ - 1) //check if corners wouldnt go out of chunk bounds
             {
-                for(int y = 0; y < chunkSizeY; y++)
+                NativeArray<int> triangulation = GetTriangulation(point);
+                for(int j = 0; j < 15; j++)
                 {
-                    for(int z = 0; z < chunkSizeZ; z++)
+                    if(triangulation[j] != -1) //if triangulation value is not -1 then add the edge to vertices
                     {
-                        //Debug.Log($"ITERATION: {x + y + z}");
-                        Point point = AccessPointIndex(x, y, z);
-                        int[] triangulation = GetTriangulation(point);
-
-                        foreach(int triang in triangulation)
-                        {
-                            Debug.Log(triang);
-                            if(triang != -1)
-                            {
-                                vertices[verticeCounter++] = GetEdgeVector(point.pointPosition, edges[triang]);
-                                triangles[triangCounter] = triangCounter++;
-                            }
-                            else //adding predefined values to arrays to "trim" them after the job is done
-                            {
-                                triangles[triangCounter++] = -1;
-                            }
-                        }
+                        vertices[triangleCounter[0] + j] = GetEdgeVector(point.pointPosition, edges[triangulation[j]]);
+                        triangles[triangleCounter[0] + j] = triangleCounter[0] + j;
+                    }
+                    else //adding predefined values to arrays to "trim" them after the job is done
+                    {
+                        triangles[triangleCounter[0] + j] = -1;
+                        verticeCounter[0]++;
                     }
                 }
-            }*/
-            Point point = chunkPoints[i];
-            int[] triangulation = GetTriangulation(point);
-
-            foreach (int triang in triangulation)
-            {
-                Debug.Log($"TRIANG: {triangCounter} | vertice: {verticeCounter}");
-                if (triang != -1)
-                {
-
-                    vertices[verticeCounter++] = GetEdgeVector(point.pointPosition, edges[triang]);
-                    triangles[triangCounter] = triangCounter++;
-                }
-                else //adding predefined values to arrays to "trim" them after the job is done
-                {
-                    triangles[triangCounter++] = -1;
-                }
+                triangleCounter[0] += 15;
+                triangulation.Dispose();
             }
-
-
         }
     }
 
 
-
-
     private void Start()
     {
-        triangles = new NativeArray<int>(15, Allocator.Persistent);
-        vertices = new NativeArray<Vector3>(15, Allocator.Persistent);
-        for(int i = 0; i < cubeGrid.ChunkAmount; i++)
+        triangles = new NativeArray<int>(15 * cubeGrid.ChunkSizeX * cubeGrid.ChunkSizeY * cubeGrid.ChunkSizeZ, Allocator.Persistent);
+        vertices = new NativeArray<Vector3>(15 * cubeGrid.ChunkSizeX * cubeGrid.ChunkSizeY * cubeGrid.ChunkSizeZ, Allocator.Persistent);
+        nativeTriangulations = new NativeArray<int>(256 * 16, Allocator.Persistent);
+        nativeCorners = new NativeArray<Vector3Int>(corners.Length, Allocator.Persistent);
+        nativeEdges = new NativeArray<Vector2Int>(edges.Length, Allocator.Persistent);
+
+        NativeArray<Vector3Int>.Copy(corners, nativeCorners);
+        NativeArray<Vector2Int>.Copy(edges, nativeEdges);
+
+        int[] flattenedTriangulations = new int[256 * 16];
+        for(int x = 0; x < 256; x++) //loop to flatten the 2d triangulation array
         {
-            Debug.Log($"JOB: {i}");
+            for(int y = 0; y < 15; y++)
+            {
+                flattenedTriangulations[x * 15 + y] = triangulations[x, y];
+            }
+        }
+        NativeArray<int>.Copy(flattenedTriangulations, nativeTriangulations);
+        NativeArray<int> triangCount = new NativeArray<int>(1, Allocator.Persistent);
+        NativeArray<int> verticeCount = new NativeArray<int>(1, Allocator.Persistent);
+        for (int i = 0; i < cubeGrid.ChunkAmount; i++)
+        {
             NativeArray<Point> chunkPoints = new NativeArray<Point>(cubeGrid.ChunkSizeX * cubeGrid.ChunkSizeY * cubeGrid.ChunkSizeZ, Allocator.Persistent);
             NativeArray<Point>.Copy(cubeGrid.GetChunk[i].chunkPoints, chunkPoints);
+            /* MarchChunks march = new MarchChunks(chunkPoints, cubeGrid.ChunkSizeX, cubeGrid.ChunkSizeY, cubeGrid.ChunkSizeZ, triangles, vertices, cubeGrid.edgeLength,
+                 cubeGrid.ChunkAmountX, cubeGrid.ChunkAmountY, cubeGrid.ChunkAmountZ, i, nativeTriangulations, nativeCorners, nativeEdges, verticeCount, triangCount);*/
+            var march = new MarchChunks()
+            {
+                chunkPoints = chunkPoints,
+                chunkSizeX = cubeGrid.ChunkSizeX,
+                chunkSizeY = cubeGrid.ChunkSizeY,
+                chunkSizeZ = cubeGrid.ChunkSizeZ,
+                triangles = triangles,
+                vertices = vertices,
+                edgeLength = cubeGrid.edgeLength,
+                chunkAmountX = cubeGrid.ChunkAmountX,
+                chunkAmountY = cubeGrid.ChunkAmountY,
+                chunkAmountZ = cubeGrid.ChunkAmountZ,
+                chunkID = i,
+                triangulations = nativeTriangulations,
+                corners = nativeCorners,
+                edges = nativeEdges,
+                verticeCounter = verticeCount,
+                triangleCounter = triangCount
+            };
 
-            MarchChunks march = new MarchChunks(chunkPoints, cubeGrid.ChunkSizeX, cubeGrid.ChunkSizeY, cubeGrid.ChunkSizeZ, triangles, vertices, cubeGrid.edgeLength,
-                cubeGrid.ChunkAmountX, cubeGrid.ChunkAmountY, cubeGrid.ChunkAmountZ, i);
+            job = march.Schedule((cubeGrid.ChunkSizeX * cubeGrid.ChunkSizeY * cubeGrid.ChunkSizeZ) - 2, 6400);
 
 
-            job = march.Schedule((cubeGrid.ChunkSizeX * cubeGrid.ChunkSizeY * cubeGrid.ChunkSizeZ) - 1, 6400);
             job.Complete();
             chunkPoints.Dispose();
 
             List<Vector3> verticesList = new List<Vector3>();
             List<int> triangleList = new List<int>();
-            for(int j = 0; j < 15; j++)
+            for (int j = 0; j < 15; j++)
             {
-
                 if (triangles[j] != -1)
                 {
-
                     triangleList.Add(triangles[j]);
                     verticesList.Add(vertices[j]);
                 }
             }
+
             if (triangleList.Count > 0)
             {
                 Mesh mesh = new Mesh();
