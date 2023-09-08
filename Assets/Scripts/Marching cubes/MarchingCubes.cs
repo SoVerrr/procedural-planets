@@ -9,6 +9,7 @@ public class MarchingCubes : MonoBehaviour
 {
     [SerializeField] private CubeGridJob cubeGrid;
     [SerializeField] MeshFilter meshFilter;
+    [SerializeField] GameObject chunkParent;
     JobHandle job;
     //List<Vector3> vertices = new List<Vector3>();
     NativeArray<int> triangles;
@@ -572,27 +573,41 @@ public class MarchingCubes : MonoBehaviour
             {
                 if (triangles[j] != -1)
                 {
-                    triangleList.Add(j);
                     verticesList.Add(vertices[j]);
                 }
             }
 
-            if (triangleList.Count > 0)
+            if (verticesList.Count > 0)
             {
-                Mesh mesh = new Mesh();
-                mesh.triangles = triangleList.ToArray();
-                mesh.vertices = verticesList.ToArray();
+
+                for (int j = 0; j < verticesList.Count; j++)
+                    triangleList.Add(j);
+
+                verticesList.Reverse();
+                Mesh mesh = new()
+                {
+                    vertices = verticesList.ToArray(),
+                    triangles = triangleList.ToArray()
+                };
+                mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32; //incrase the triangle limit from uint16 to uint32
+
+                /*mesh.triangles = triangleList.ToArray();
+                mesh.vertices = verticesList.ToArray();*/
+                mesh.RecalculateNormals();
+
 
                 meshObject = new GameObject($"Chunk{i}");
                 meshObject.AddComponent<MeshFilter>();
                 meshObject.AddComponent<MeshRenderer>();
-
                 meshObject.GetComponent<MeshFilter>().mesh = mesh;
-                //Instantiate(meshObject);
+
+                meshObject.transform.parent = chunkParent.transform;
                 meshObject = null;
             }
             vertices.Dispose();
             triangles.Dispose();
+            triangleList.Clear();
+            verticesList.Clear();
 
         }
 
