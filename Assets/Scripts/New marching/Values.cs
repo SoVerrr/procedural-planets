@@ -8,6 +8,7 @@ public class Values : MonoBehaviour //Singleton with values that are going to be
     [SerializeField] private Vector3Int planetSize; //x,y,z size of the planet grid
     [SerializeField] private int density; //how many sample points are between n and n+1
     [SerializeField] private int radius;
+    [SerializeField] private float noiseScale;
     private Vector3Int[] corners = new Vector3Int[8]
    {
         new Vector3Int(0, 0, 0),
@@ -322,6 +323,10 @@ public class Values : MonoBehaviour //Singleton with values that are going to be
     public float SurfaceLevel
     {
         get { return surfaceLevel; }
+    }
+    public float NoiseScale
+    {
+        get { return noiseScale; }
     }
     #endregion
 

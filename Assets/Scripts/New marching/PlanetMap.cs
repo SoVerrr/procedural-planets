@@ -8,7 +8,7 @@ using Unity.Collections;
 public class PlanetMap : MonoBehaviour
 {
 
-    float[,,] planetMap;
+    public static float[,,] planetMap;
 
     private void Update()
     {
@@ -51,7 +51,8 @@ public class PlanetMap : MonoBehaviour
             radius = radius,
             density = density,
             centrePoint = new float3(planetSize.x / 2, planetSize.y / 2, planetSize.z / 2),
-            pointValues = pointVal
+            pointValues = pointVal,
+            noiseScale = Values.Instance.NoiseScale
         };
         job = processing.Schedule(arraySize, 6400);
 
@@ -63,17 +64,20 @@ public class PlanetMap : MonoBehaviour
             int y = (i / planetSize.z) % planetSize.y;
             int x = (i / (planetSize.y * planetSize.z)) % planetSize.x;
             planetMap[x, y, z] = pointVal[i];
+
         }
 
         pointVal.Dispose(); //Dispose of the native array to avoid memory leaks
 
     }
+    [BurstCompile]
     struct ProcessPlanetPoints : IJobParallelFor //generate a 3d array of floats for a sphere with applied noise
     {
         [ReadOnly] public int3 planetSize;
         [ReadOnly] public int radius;
         [ReadOnly] public int density;
         [ReadOnly] public float3 centrePoint;
+        [ReadOnly] public float noiseScale;
         [WriteOnly] public NativeArray<float> pointValues;
 
         private float3 IndiceToPos(int i) //Convert 1d index to a 3d position by calculating 3d indices and then dividing them by density
@@ -86,12 +90,12 @@ public class PlanetMap : MonoBehaviour
 
             return pos / density;
         }
-
         public void Execute(int i)
         {
             float3 position = IndiceToPos(i); //Calculate points position in the world based on its index
             float distFromCentre = Vector3.Distance(centrePoint, position); //Calculate position's distance from centre
-            pointValues[i] = (distFromCentre - radius) + PlanetMap.Perlin3D(position, 1); //Assign value to the point
+
+            pointValues[i] = (Mathf.Abs(distFromCentre) - radius) + PlanetMap.Perlin3D(position, noiseScale); //Assign value to the point
         }
     }
 
@@ -107,15 +111,16 @@ public class PlanetMap : MonoBehaviour
             {
                 for(int z = 0; z < Values.Instance.PlanetSize.z; z++)
                 {
-                    if (planetMap[x, y, z] < Values.Instance.SurfaceLevel)
+                    if(planetMap[x, y, z] < 1 && planetMap[x, y, z] >= 0)
+                    {
+                        Gizmos.color = Color.red;
+                        Gizmos.DrawCube(new Vector3(x, y, z), new Vector3(0.1f, 0.1f, 0.1f));
+                    }
+                    else if (planetMap[x, y, z] < Values.Instance.SurfaceLevel)
                     {
                         Gizmos.color = Color.green;
                         Gizmos.DrawCube(new Vector3(x, y, z), new Vector3(0.1f, 0.1f, 0.1f));
-                    }
-                    else
-                    {
-                        
-                    }
+                    }                   
                 }
             }
         }
