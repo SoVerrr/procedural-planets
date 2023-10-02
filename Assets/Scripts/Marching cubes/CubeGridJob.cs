@@ -160,14 +160,6 @@ public class CubeGridJob : MonoBehaviour
     }
     private void Start()
     {
-
-        /*CubeGridJobs cubejob = new CubeGridJobs(gridSizeX, gridSizeY, gridSizeZ, edgeLength, points, perlinScale, perlinRange, radius, createSphere, middlePoint);
-        job = cubejob.Schedule(gridSizeY * gridSizeX * gridSizeZ, 6400);
-
-        job.Complete();
-        points.CopyTo(gridPoints);
-
-        oldPerlin = perlinRange;*/
         for (int i = 0; i < chunkAmount; i++)
         {
             GenerateChunk chunkJob = new GenerateChunk(chunkSizeX, chunkSizeY, chunkSizeZ, edgeLength, i, points, chunkAmount, chunkAmountX, chunkAmountY, chunkAmountZ);

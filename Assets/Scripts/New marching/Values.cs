@@ -1,25 +1,15 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Unity.Collections;
-using Unity.Jobs;
-using Unity.Mathematics;
-using Unity.Burst;
-public class MarchingCubes : MonoBehaviour
+
+public class Values : MonoBehaviour //Singleton with values that are going to be used throughout the whole program for easier access
 {
-    [SerializeField] private CubeGridJob cubeGrid;
-    [SerializeField] MeshFilter meshFilter;
-    [SerializeField] GameObject chunkParent;
-    JobHandle job;
-    //List<Vector3> vertices = new List<Vector3>();
-    NativeArray<int> triangles;
-    NativeArray<Vector3> vertices;
-    NativeArray<int> nativeTriangulations;
-    NativeArray<Vector3Int> nativeCorners;
-    NativeArray<Vector2Int> nativeEdges;
-    GameObject meshObject;
-    public static Vector3Int[] corners = new Vector3Int[8]
-    {
+    [SerializeField] private float surfaceLevel; //level at which the corner is on, should be between -1 and 1
+    [SerializeField] private Vector3Int planetSize; //x,y,z size of the planet grid
+    [SerializeField] private int density; //how many sample points are between n and n+1
+    [SerializeField] private int radius;
+    private Vector3Int[] corners = new Vector3Int[8]
+   {
         new Vector3Int(0, 0, 0),
         new Vector3Int(0, 0, 1),
         new Vector3Int(1, 0, 1),
@@ -28,8 +18,8 @@ public class MarchingCubes : MonoBehaviour
         new Vector3Int(0, 1, 1),
         new Vector3Int(1, 1, 1),
         new Vector3Int(1, 1, 0)
-    };
-    public static Vector2Int[] edges = new Vector2Int[12]
+   }; //corners of the cube
+    private Vector2Int[] edges = new Vector2Int[12]
     {
         new Vector2Int(0, 1),
         new Vector2Int(1, 2),
@@ -43,8 +33,8 @@ public class MarchingCubes : MonoBehaviour
         new Vector2Int(1, 5),
         new Vector2Int(2, 6),
         new Vector2Int(3, 7)
-    };
-    private static int[,] triangulations = new int[256, 15]
+    }; //between which corners is the edge at index
+    private int[,] triangulations = new int[256, 15]
     {
         {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 },
         { 0,  8,  3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 },
@@ -302,320 +292,51 @@ public class MarchingCubes : MonoBehaviour
         { 0,  9,  1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 },
         { 0,  3,  8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 },
         {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 }
-    }; //credit https://www.youtube.com/watch?v=KvwVYJY_IZ4
-    private int[] GetTriangulation(Point cube) //Takes the triangulation config index and returns from the triangulation array
+    }; //triangulations for marching cubes
+
+    #region getters
+    public Vector3Int[] Corners
     {
-        int config_idx = GetTriangulationIndex(cube);
-        int[] triangulation = new int[15];
-
-
-        for (int i = 0; i < 15; i++)
-        {
-            triangulation[i] = triangulations[config_idx, i];
-        }
-
-        return triangulation;
+        get { return corners; }
     }
-    public int GetTriangulationIndex(Point cube) //If a corner is "active" it adds 2^i to the binary config index which corresponds to the index in the triangulation array
+    public Vector2Int[] Edges
     {
-        int config_idx = 0b00000000;
-
-        Vector3Int cube_idx = cubeGrid.PositionToIndex(cube.pointPosition);
-        for (int i = 0; i < corners.Length; i++)
-        {
-            Vector3Int corner_idx = cube_idx + corners[i];
-            if (cubeGrid.AccessPointIndex(corner_idx.x, corner_idx.y, corner_idx.z).pointOn)
-            {
-                config_idx += (int)Mathf.Pow(2, i);
-            }
-            corner_idx -= corners[i];
-        }
-
-        return config_idx;
+        get { return edges; }
     }
-    public Vector3 GetEdgeVector(Vector3 pointPoisition, Vector2Int edgeIndex) //calculating the Vector3 in the middle of the edge of 2 given cube corners
+    public int[,] Triangulations
     {
-        Vector3 edge;
-        Vector3 cornerA = new Vector3(corners[edgeIndex.x].x * cubeGrid.edgeLength, corners[edgeIndex.x].y * cubeGrid.edgeLength, corners[edgeIndex.x].z * cubeGrid.edgeLength);
-        Vector3 cornerB = new Vector3(corners[edgeIndex.y].x * cubeGrid.edgeLength, corners[edgeIndex.y].y * cubeGrid.edgeLength, corners[edgeIndex.y].z * cubeGrid.edgeLength);
-        edge = ((pointPoisition + cornerA) + (pointPoisition + cornerB)) / 2;
-        return edge;
+        get { return triangulations; }
     }
-
-    /*public void MarchCubes()
+    public Vector3Int PlanetSize
     {
-        List<int> triangulations = new List<int>();
-        Vector3Int gridSize = cubeGrid.GetGridSizes();
-        int triang = 0;
-        for (int x = 0; x < gridSize.x - 1; x++) //Iterating through the cube without going on outermost faces
-        {
-            for (int y = 0; y < gridSize.y - 1; y++)
-            {
-                for (int z = 0; z < gridSize.z - 1; z++)
-                {
-                    int[] triangulation = GetTriangulation(cubeGrid.AccessPointIndex(x, y, z)); //Calculating triangulations
-                    foreach (var item in triangulation)
-                    {
-                        if (item != -1) //If the triangulation is not -1 then the edge vertex with the index from triangulations goes into vertices array and is added to triangles 
-                        {
-                            vertices.Add(GetEdgeVector(cubeGrid.AccessPointIndex(x, y, z).pointPosition, edges[item]));
-                            triangulations.Add(triang);
-                            triang++;
-                        }
-                    }
-                }
-            }
-        }
-        Mesh mesh = new Mesh();
-        mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32; //incrase the triangle limit from uint16 to uint32
-        vertices.Reverse();
-        mesh.vertices = vertices.ToArray();
-        mesh.triangles = triangulations.ToArray();
-        mesh.RecalculateNormals();
-        meshFilter.mesh = mesh;
-    }*/
-    [BurstCompile]
-    public struct MarchChunks : IJobParallelFor
-    {
-        public int chunkSizeX;
-        public int chunkSizeY;
-        public int chunkSizeZ;
-        public int chunkAmountX;
-        public int chunkAmountY;
-        public int chunkAmountZ;
-        public int chunkID;
-        public NativeArray<int> triangulations;
-        public NativeArray<Vector3Int> corners;
-        public NativeArray<Vector2Int> edges;
-        public NativeArray<int> verticeCounter;
-        public NativeArray<int> triangleCounter;
-        [NativeDisableParallelForRestriction] public NativeArray<int> triangles;
-        [NativeDisableParallelForRestriction] public NativeArray<Vector3> vertices;
-        [NativeDisableParallelForRestriction] public NativeArray<Point> chunkPoints;
-
-        public float edgeLength;
-        private Vector3 CalculateStartPosition(int i)
-        {
-            Vector3 startPosition = new Vector3();
-
-            startPosition.x = (i % chunkAmountX) * edgeLength * chunkSizeX;
-            startPosition.y = (Mathf.Floor((i / Mathf.Pow(chunkAmountY, 2))) % chunkAmountY) * edgeLength * chunkSizeZ;
-            startPosition.z = (Mathf.Floor((i / chunkAmountZ)) % chunkAmountZ) * edgeLength * chunkSizeZ;
-            return startPosition;
-        }
-        public Vector3Int PositionToIndex(Vector3 position)
-        {
-            Vector3 startPosition = CalculateStartPosition(chunkID);
-            int zIndex = (int)Mathf.Round((position.z / edgeLength) - startPosition.z);
-            int xIndex = (int)Mathf.Round((position.x / edgeLength) - startPosition.x);
-            int yIndex = (int)Mathf.Round((position.y / edgeLength) - startPosition.y);
-
-            
-            return new Vector3Int(xIndex, yIndex, zIndex);
-        }
-        public Point AccessPointIndex(int x, int y, int z)
-        {
-            int i = (x * chunkSizeX * chunkSizeY + y * chunkSizeZ + z);
-            return chunkPoints[i];
-        }
-        
-        private NativeArray<int> GetTriangulation(Point cube) //Takes the triangulation config index and returns from the triangulation array
-        {
-            int config_idx = GetTriangulationIndex(cube) * 15;
-            NativeArray<int> triangulation = new NativeArray<int>(15, Allocator.Temp);
-
-
-            for (int i = 0; i < 15; i++)
-            {
-                triangulation[i] = triangulations[config_idx + i];
-            }
-
-            return triangulation;
-        }
-
-        public int GetTriangulationIndex(Point cube) //If a corner is "active" it adds 2^i to the binary config index which corresponds to the index in the triangulation array
-        {
-            int config_idx = 0b00000000;
-
-            Vector3Int cube_idx = PositionToIndex(cube.pointPosition);
-            for (int i = 0; i < corners.Length; i++)
-            {
-                Vector3Int corner_idx = cube_idx + corners[i];
-                if (AccessPointIndex(corner_idx.x, corner_idx.y, corner_idx.z).pointOn)
-                {
-                    config_idx += (int)Mathf.Pow(2, i);
-                }
-                corner_idx -= corners[i];
-            }
-
-            return config_idx;
-        }
-
-        /*public MarchChunks(NativeArray<Point> chunkPoints, int chunkSizeX, int chunkSizeY, int chunkSizeZ, NativeArray<int> triangles, NativeArray<Vector3> vertices, float edgeLength,
-            int chunkAmountX, int chunkAmountZ, int chunkAmountY, int chunkID, NativeArray<int> triangulations, NativeArray<Vector3Int> corners, NativeArray<Vector2Int> edges,
-            NativeArray<int> verticeCounter, NativeArray<int> triangleCounter)
-        {
-            this.chunkPoints = chunkPoints;
-            this.chunkSizeX = chunkSizeX;
-            this.chunkSizeY = chunkSizeY;
-            this.chunkSizeZ = chunkSizeZ;
-            this.triangles = triangles;
-            this.vertices = vertices;
-            this.edgeLength = edgeLength;
-            this.chunkAmountX = chunkAmountX;
-            this.chunkAmountZ = chunkAmountZ;
-            this.chunkAmountY = chunkAmountY;
-            this.chunkID = chunkID;
-            this.triangulations = triangulations;
-            this.corners = corners;
-            this.edges = edges;
-            this.verticeCounter = verticeCounter;
-            this.triangleCounter = triangleCounter;
-        }*/
-
-        public Vector3 GetEdgeVector(Vector3 pointPoisition, Vector2Int edgeIndex) //calculating the Vector3 in the middle of the edge of 2 given cube corners
-        {
-            Vector3 edge;
-            Vector3 cornerA = new Vector3(corners[edgeIndex.x].x * edgeLength, corners[edgeIndex.x].y * edgeLength, corners[edgeIndex.x].z * edgeLength);
-            Vector3 cornerB = new Vector3(corners[edgeIndex.y].x * edgeLength, corners[edgeIndex.y].y * edgeLength, corners[edgeIndex.y].z * edgeLength);
-            edge = ((pointPoisition + cornerA) + (pointPoisition + cornerB)) / 2;
-            return edge;
-        }
-
-        public void Execute(int i)
-        {
-            Point point = chunkPoints[i];
-            Vector3Int pointIndex = PositionToIndex(point.pointPosition);
-            if (pointIndex.x < chunkSizeX - 1 && pointIndex.y < chunkSizeY - 1 && pointIndex.z < chunkSizeZ - 1) //check if corners wouldnt go out of chunk bounds
-            {
-                NativeArray<int> triangulation = GetTriangulation(point);
-                for(int j = 0; j < 15; j++)
-                {
-                    if(triangulation[j] != -1) //if triangulation value is not -1 then add the edge to vertices
-                    {
-                        vertices[triangleCounter[0] + j] = GetEdgeVector(point.pointPosition, edges[triangulation[j]]);
-                        triangles[triangleCounter[0] + j] = triangleCounter[0] + j;
-                    }
-                    else //adding predefined values to arrays to "trim" them after the job is done
-                    {
-                        triangles[triangleCounter[0] + j] = -1;
-                        verticeCounter[0]++;
-                    }
-                }
-                triangleCounter[0] += 15;
-                triangulation.Dispose();
-            }
-        }
+        get { return planetSize; }
     }
-
-
-    private void Start()
+    public int Radius
     {
-        nativeTriangulations = new NativeArray<int>(256 * 16, Allocator.Persistent);
-        nativeCorners = new NativeArray<Vector3Int>(corners.Length, Allocator.Persistent);
-        nativeEdges = new NativeArray<Vector2Int>(edges.Length, Allocator.Persistent);
-
-        NativeArray<Vector3Int>.Copy(corners, nativeCorners);
-        NativeArray<Vector2Int>.Copy(edges, nativeEdges);
-
-        int[] flattenedTriangulations = new int[256 * 16];
-        for(int x = 0; x < 256; x++) //loop to flatten the 2d triangulation array
-        {
-            for(int y = 0; y < 15; y++)
-            {
-                flattenedTriangulations[x * 15 + y] = triangulations[x, y];
-            }
-        }
-        NativeArray<int>.Copy(flattenedTriangulations, nativeTriangulations);
-        NativeArray<int> triangCount = new NativeArray<int>(1, Allocator.Persistent);
-        NativeArray<int> verticeCount = new NativeArray<int>(1, Allocator.Persistent);
-        for (int i = 0; i < cubeGrid.ChunkAmount; i++)
-        {
-            triangles = new NativeArray<int>(15 * cubeGrid.ChunkSizeX * cubeGrid.ChunkSizeY * cubeGrid.ChunkSizeZ, Allocator.Persistent);
-            vertices = new NativeArray<Vector3>(15 * cubeGrid.ChunkSizeX * cubeGrid.ChunkSizeY * cubeGrid.ChunkSizeZ, Allocator.Persistent);
-            NativeArray<Point> chunkPoints = new NativeArray<Point>(cubeGrid.ChunkSizeX * cubeGrid.ChunkSizeY * cubeGrid.ChunkSizeZ, Allocator.Persistent);
-            NativeArray<Point>.Copy(cubeGrid.GetChunk[i].chunkPoints, chunkPoints);
-            /* MarchChunks march = new MarchChunks(chunkPoints, cubeGrid.ChunkSizeX, cubeGrid.ChunkSizeY, cubeGrid.ChunkSizeZ, triangles, vertices, cubeGrid.edgeLength,
-                 cubeGrid.ChunkAmountX, cubeGrid.ChunkAmountY, cubeGrid.ChunkAmountZ, i, nativeTriangulations, nativeCorners, nativeEdges, verticeCount, triangCount);*/
-
-            triangCount[0] = 0;
-            verticeCount[0] = 0;
-
-            var march = new MarchChunks()
-            {
-                chunkPoints = chunkPoints,
-                chunkSizeX = cubeGrid.ChunkSizeX,
-                chunkSizeY = cubeGrid.ChunkSizeY,
-                chunkSizeZ = cubeGrid.ChunkSizeZ,
-                triangles = triangles,
-                vertices = vertices,
-                edgeLength = cubeGrid.edgeLength,
-                chunkAmountX = cubeGrid.ChunkAmountX,
-                chunkAmountY = cubeGrid.ChunkAmountY,
-                chunkAmountZ = cubeGrid.ChunkAmountZ,
-                chunkID = i,
-                triangulations = nativeTriangulations,
-                corners = nativeCorners,
-                edges = nativeEdges,
-                verticeCounter = verticeCount,
-                triangleCounter = triangCount
-            };
-
-            job = march.Schedule((cubeGrid.ChunkSizeX * cubeGrid.ChunkSizeY * cubeGrid.ChunkSizeZ), 6400);
-
-
-            job.Complete();
-            chunkPoints.Dispose();
-
-            List<Vector3> verticesList = new List<Vector3>();
-            List<int> triangleList = new List<int>();
-            for (int j = 0; j < 15 * cubeGrid.ChunkSizeX * cubeGrid.ChunkSizeY * cubeGrid.ChunkSizeZ; j++)
-            {
-                if (triangles[j] != -1)
-                {
-                    verticesList.Add(vertices[j]);
-                }
-            }
-
-            if (verticesList.Count > 0)
-            {
-
-                for (int j = 0; j < verticesList.Count; j++)
-                    triangleList.Add(j);
-
-                verticesList.Reverse();
-                Mesh mesh = new()
-                {
-                    vertices = verticesList.ToArray(),
-                    indexFormat = UnityEngine.Rendering.IndexFormat.UInt32,
-                    triangles = triangleList.ToArray()
-                };
-
-                mesh.RecalculateNormals();
-
-
-                meshObject = new GameObject($"Chunk{i}");
-                meshObject.AddComponent<MeshFilter>();
-                meshObject.AddComponent<MeshRenderer>();
-                meshObject.GetComponent<MeshFilter>().mesh = mesh;
-
-                meshObject.transform.parent = chunkParent.transform;
-                meshObject = null;
-            }
-
-
-            vertices.Dispose();
-            triangles.Dispose();
-            triangleList.Clear();
-            verticesList.Clear();
-            /*nativeTriangulations.Dispose();
-            nativeCorners.Dispose();
-            nativeEdges.Dispose();*/
-        }
-
+        get { return radius; }
     }
-    private void Update()
+    public int Density
     {
+        get { return density; }
+    }
+    public float SurfaceLevel
+    {
+        get { return surfaceLevel; }
+    }
+    #endregion
+
+    public static Values Instance { get; private set; }
+
+    private void Awake()
+    {
+
+        if (Instance != null && Instance != this)
+        {
+            Destroy(this);
+        }
+        else
+        {
+            Instance = this;
+        }
     }
 }
-
