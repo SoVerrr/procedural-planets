@@ -9,7 +9,9 @@ public class PlanetMap : MonoBehaviour
 {
 
     public static float[,,] planetMap;
-
+    List<Vector3> vertices = new List<Vector3>();
+    List<int> triangles = new List<int>();
+    NativeArray<float> pointVal;
     private void Update()
     {
         GeneratePlanetMap(Values.Instance.PlanetSize, Values.Instance.Radius, Values.Instance.Density, ref planetMap);
@@ -20,6 +22,66 @@ public class PlanetMap : MonoBehaviour
         planetMap = new float[Values.Instance.PlanetSize.x, Values.Instance.PlanetSize.y, Values.Instance.PlanetSize.z];
 
         GeneratePlanetMap(Values.Instance.PlanetSize, Values.Instance.Radius, Values.Instance.Density, ref planetMap);
+        MarchCubes();
+        
+    }
+
+    private void MarchCubes()
+    {
+        NativeArray<float3> verts = new NativeArray<float3>(Values.Instance.PlanetSize.x * Values.Instance.PlanetSize.y * Values.Instance.PlanetSize.z, Allocator.Persistent);
+        NativeArray<int> triangs = new NativeArray<int>(Values.Instance.PlanetSize.x * Values.Instance.PlanetSize.y * Values.Instance.PlanetSize.z, Allocator.Persistent);
+        NativeArray<int> triangCounter = new NativeArray<int>(1, Allocator.Persistent);
+        NativeArray<int> nativeTriangulations = new NativeArray<int>(256 * 16, Allocator.Persistent);
+        NativeArray<int3> nativeCorners = new NativeArray<int3>(Values.Instance.Corners.Length, Allocator.Persistent);
+        NativeArray<int2> nativeEdges = new NativeArray<int2>(Values.Instance.Edges.Length, Allocator.Persistent);
+        NativeArray<float> cube = new NativeArray<float>(8, Allocator.Persistent);
+        NativeArray<int3>.Copy(Values.Instance.Corners, nativeCorners);
+        NativeArray<int2>.Copy(Values.Instance.Edges, nativeEdges);
+        int[] flattenedTriangulations = new int[256 * 16];
+        for (int x = 0; x < 256; x++) //loop to flatten the 2d triangulation array
+        {
+            for (int y = 0; y < 15; y++)
+            {
+                flattenedTriangulations[x * 15 + y] = Values.Instance.Triangulations[x, y];
+            }
+        }
+        NativeArray<int>.Copy(flattenedTriangulations, nativeTriangulations);
+        Marching marchJob = new Marching()
+        {
+            triangulations = nativeTriangulations,
+            vertices = verts,
+            triangles = triangs,
+            edges = nativeEdges,
+            corners = nativeCorners,
+            cube = cube,
+            heightMap = pointVal,
+            triangCounter = triangCounter
+        };
+
+        JobHandle job = marchJob.Schedule(Values.Instance.PlanetSize.x * Values.Instance.PlanetSize.y * Values.Instance.PlanetSize.z, 6400);
+        job.Complete();
+        for(int i = 0; i < triangCounter[0]; i++)
+        {
+            if (!verts[i].Equals(null))
+            {
+                vertices.Add(verts[i]);
+            }
+            triangles.Add(triangs[i]);
+        }
+
+        Mesh mesh = new()
+        {
+            vertices = vertices.ToArray(),
+            indexFormat = UnityEngine.Rendering.IndexFormat.UInt32,
+            triangles = triangles.ToArray()
+        };
+
+        mesh.RecalculateNormals();
+
+        GameObject meshObject = new GameObject($"Chunk");
+        meshObject.AddComponent<MeshFilter>();
+        meshObject.AddComponent<MeshRenderer>();
+        meshObject.GetComponent<MeshFilter>().mesh = mesh;
     }
 
     public static float Perlin3D(Vector3 pos, float scale) //Random Perlin3D noise function, will be changed later on
@@ -43,8 +105,8 @@ public class PlanetMap : MonoBehaviour
     {
         JobHandle job;
         int arraySize = planetSize.x * planetSize.y * planetSize.z * (int)Mathf.Pow(density, 3); //The size of the array based on planet size and density of points
-        NativeArray<float> pointVal = new NativeArray<float>(arraySize, Allocator.Persistent);
-
+        pointVal = new NativeArray<float>(arraySize, Allocator.Persistent);
+        
         ProcessPlanetPoints processing = new ProcessPlanetPoints //Assign values to the processing job
         {
             planetSize = new int3(planetSize.x, planetSize.y, planetSize.z),
@@ -67,7 +129,7 @@ public class PlanetMap : MonoBehaviour
 
         }
 
-        pointVal.Dispose(); //Dispose of the native array to avoid memory leaks
+        //pointVal.Dispose(); //Dispose of the native array to avoid memory leaks
 
     }
     [BurstCompile]
@@ -95,7 +157,7 @@ public class PlanetMap : MonoBehaviour
             float3 position = IndiceToPos(i); //Calculate points position in the world based on its index
             float distFromCentre = Vector3.Distance(centrePoint, position); //Calculate position's distance from centre
 
-            pointValues[i] = (Mathf.Abs(distFromCentre) - radius) + PlanetMap.Perlin3D(position, noiseScale); //Assign value to the point
+            pointValues[i] = (distFromCentre - radius) + PlanetMap.Perlin3D(position, noiseScale); //Assign value to the point
         }
     }
 

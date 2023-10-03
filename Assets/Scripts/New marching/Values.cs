@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
+using Unity.Mathematics;
 public class Values : MonoBehaviour //Singleton with values that are going to be used throughout the whole program for easier access
 {
     [SerializeField] private float surfaceLevel; //level at which the corner is on, should be between -1 and 1
@@ -9,31 +9,31 @@ public class Values : MonoBehaviour //Singleton with values that are going to be
     [SerializeField] private int density; //how many sample points are between n and n+1
     [SerializeField] private int radius;
     [SerializeField] private float noiseScale;
-    private Vector3Int[] corners = new Vector3Int[8]
+    private int3[] corners = new int3[8]
    {
-        new Vector3Int(0, 0, 0),
-        new Vector3Int(0, 0, 1),
-        new Vector3Int(1, 0, 1),
-        new Vector3Int(1, 0, 0),
-        new Vector3Int(0, 1, 0),
-        new Vector3Int(0, 1, 1),
-        new Vector3Int(1, 1, 1),
-        new Vector3Int(1, 1, 0)
+        new int3(0, 0, 0),
+        new int3(0, 0, 1),
+        new int3(1, 0, 1),
+        new int3(1, 0, 0),
+        new int3(0, 1, 0),
+        new int3(0, 1, 1),
+        new int3(1, 1, 1),
+        new int3(1, 1, 0)
    }; //corners of the cube
-    private Vector2Int[] edges = new Vector2Int[12]
+    private int2[] edges = new int2[12]
     {
-        new Vector2Int(0, 1),
-        new Vector2Int(1, 2),
-        new Vector2Int(2, 3),
-        new Vector2Int(3, 0),
-        new Vector2Int(4, 5),
-        new Vector2Int(5, 6),
-        new Vector2Int(6, 7),
-        new Vector2Int(7, 4),
-        new Vector2Int(0, 4),
-        new Vector2Int(1, 5),
-        new Vector2Int(2, 6),
-        new Vector2Int(3, 7)
+        new int2(0, 1),
+        new int2(1, 2),
+        new int2(2, 3),
+        new int2(3, 0),
+        new int2(4, 5),
+        new int2(5, 6),
+        new int2(6, 7),
+        new int2(7, 4),
+        new int2(0, 4),
+        new int2(1, 5),
+        new int2(2, 6),
+        new int2(3, 7)
     }; //between which corners is the edge at index
     private int[,] triangulations = new int[256, 15]
     {
@@ -296,11 +296,11 @@ public class Values : MonoBehaviour //Singleton with values that are going to be
     }; //triangulations for marching cubes
 
     #region getters
-    public Vector3Int[] Corners
+    public int3[] Corners
     {
         get { return corners; }
     }
-    public Vector2Int[] Edges
+    public int2[] Edges
     {
         get { return edges; }
     }
