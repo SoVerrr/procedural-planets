@@ -23,7 +23,7 @@ public class PlanetMap : MonoBehaviour
 
         GeneratePlanetMap(Values.Instance.PlanetSize, Values.Instance.Radius, Values.Instance.Density, ref planetMap);
         MarchCubes();
-        
+
     }
 
     private void MarchCubes()
@@ -31,6 +31,7 @@ public class PlanetMap : MonoBehaviour
         NativeArray<float3> verts = new NativeArray<float3>(Values.Instance.PlanetSize.x * Values.Instance.PlanetSize.y * Values.Instance.PlanetSize.z, Allocator.Persistent);
         NativeArray<int> triangs = new NativeArray<int>(Values.Instance.PlanetSize.x * Values.Instance.PlanetSize.y * Values.Instance.PlanetSize.z, Allocator.Persistent);
         NativeArray<int> triangCounter = new NativeArray<int>(1, Allocator.Persistent);
+        NativeArray<int> vertCounter = new NativeArray<int>(1, Allocator.Persistent);
         NativeArray<int> nativeTriangulations = new NativeArray<int>(256 * 16, Allocator.Persistent);
         NativeArray<int3> nativeCorners = new NativeArray<int3>(Values.Instance.Corners.Length, Allocator.Persistent);
         NativeArray<int2> nativeEdges = new NativeArray<int2>(Values.Instance.Edges.Length, Allocator.Persistent);
@@ -55,17 +56,16 @@ public class PlanetMap : MonoBehaviour
             corners = nativeCorners,
             cube = cube,
             heightMap = pointVal,
-            triangCounter = triangCounter
+            triangCounter = triangCounter,
+            vertCounter = vertCounter
         };
 
         JobHandle job = marchJob.Schedule(Values.Instance.PlanetSize.x * Values.Instance.PlanetSize.y * Values.Instance.PlanetSize.z, 6400);
         job.Complete();
+        Debug.Log(triangCounter[0]);
         for(int i = 0; i < triangCounter[0]; i++)
         {
-            if (!verts[i].Equals(null))
-            {
-                vertices.Add(verts[i]);
-            }
+            vertices.Add(verts[i]);
             triangles.Add(triangs[i]);
         }
 

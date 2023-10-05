@@ -16,13 +16,14 @@ struct Marching : IJobParallelFor
     [NativeDisableParallelForRestriction] public NativeArray<int> triangles;
     [NativeDisableParallelForRestriction] public NativeArray<float> cube;
     [NativeDisableParallelForRestriction] public NativeArray<int> triangCounter;
+    [NativeDisableParallelForRestriction] public NativeArray<int> vertCounter;
     private int GetCubeConfig(NativeArray<float> cube) //Get configuration of the cube for the triangulation table
     {
         int configIdx = 0;
 
         for(int i = 0; i < 8; i++) //iterate through corners of the cube
         {
-            if(cube[i] < Values.Instance.SurfaceLevel)
+            if(cube[i] > Values.Instance.SurfaceLevel)
             {
                 configIdx |= 1 << i; //OR gate inserts 1 at the index of a point higher than surface level by bitshifting
             }
@@ -86,28 +87,35 @@ struct Marching : IJobParallelFor
                 float3 edge = (vectorA + vectorB) / 2; //TODO: interpolate the corners to get smooth edges
 
                 //Iterate through vertices to check if the vertice was already added and if it wasnt add it at the end
-                int verticeIndex = -1; //If the vetice was already added save its index to add it to triangles
+                int verticeIndex = -999; //If the vetice was already added save its index to add it to triangles
 
-                for (int p = 0; p < triangles.Length; p++)
+                vertices[vertCounter[0]] = edge;
+                triangles[triangCounter[0]] = triangCounter[0];
+                vertCounter[0]++;
+                triangCounter[0]++;
+
+
+               /* for (int p = 0; p < triangles.Length; p++)
                 {
                     if (vertices[p].Equals(edge)) //If vertice already exists set verticeIndex to its index
                     {
                         verticeIndex = p;
                     }
-                    else if (vertices[p].Equals(null)) //If it reaches end of vertices without detecting a duplicate add a new one and add it to triangles
+                    else if (p == vertCounter[0]) //If it reaches end of vertices without detecting a duplicate add a new one and add it to triangles
                     {
                         vertices[p] = edge;
-                        triangles[triangCounter[0]] = p;
-                        triangCounter[0]++;
+                        triangles[triangCounter[0]++] = p;
+                        vertCounter[0]++;
                         break;
                     }
-
-                    if (p == triangCounter[0]) //If it reaches end of triangles add a duplicate vertex and its index to triangles
+                    else if (p == triangCounter[0]) //If it reaches end of triangles add a duplicate vertex and its index to triangles
                     {
+                        if (verticeIndex == -999)
+                            Debug.Log($"{edge} | {vertices[p]} | VertCount: {vertCounter[0]} | TriangCount: {triangCounter[0]} | P: {p}");
                         triangles[triangCounter[0]] = verticeIndex;
                         triangCounter[0]++;
                     }
-                }
+                }*/
             }
         }
     }
