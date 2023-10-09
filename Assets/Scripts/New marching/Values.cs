@@ -9,16 +9,17 @@ public class Values : MonoBehaviour //Singleton with values that are going to be
     [SerializeField] private int density; //how many sample points are between n and n+1
     [SerializeField] private int radius;
     [SerializeField] private float noiseScale;
-    private int3[] corners = new int3[8]
+    [SerializeField] private bool drawPoints;
+    private Vector3[] corners = new Vector3[8]
    {
-        new int3(0, 0, 0),
-        new int3(0, 0, 1),
-        new int3(1, 0, 1),
-        new int3(1, 0, 0),
-        new int3(0, 1, 0),
-        new int3(0, 1, 1),
-        new int3(1, 1, 1),
-        new int3(1, 1, 0)
+        new Vector3(0, 0, 0),
+        new Vector3(0, 0, 1),
+        new Vector3(1, 0, 1),
+        new Vector3(1, 0, 0),
+        new Vector3(0, 1, 0),
+        new Vector3(0, 1, 1),
+        new Vector3(1, 1, 1),
+        new Vector3(1, 1, 0)
    }; //corners of the cube
     private int2[] edges = new int2[12]
     {
@@ -296,7 +297,7 @@ public class Values : MonoBehaviour //Singleton with values that are going to be
     }; //triangulations for marching cubes
 
     #region getters
-    public int3[] Corners
+    public Vector3[] Corners
     {
         get { return corners; }
     }
@@ -327,6 +328,10 @@ public class Values : MonoBehaviour //Singleton with values that are going to be
     public float NoiseScale
     {
         get { return noiseScale; }
+    }
+    public bool DrawPoints
+    {
+        get { return drawPoints; }
     }
     #endregion
 

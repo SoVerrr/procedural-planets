@@ -12,6 +12,7 @@ public class PlanetMap : MonoBehaviour
     List<Vector3> vertices = new List<Vector3>();
     List<int> triangles = new List<int>();
     NativeArray<float> pointVal;
+    [SerializeField] GameObject meshObject;
     private void Update()
     {
         GeneratePlanetMap(Values.Instance.PlanetSize, Values.Instance.Radius, Values.Instance.Density, ref planetMap);
@@ -19,6 +20,8 @@ public class PlanetMap : MonoBehaviour
 
     void Start()
     {
+        
+
         planetMap = new float[Values.Instance.PlanetSize.x, Values.Instance.PlanetSize.y, Values.Instance.PlanetSize.z];
 
         GeneratePlanetMap(Values.Instance.PlanetSize, Values.Instance.Radius, Values.Instance.Density, ref planetMap);
@@ -27,6 +30,21 @@ public class PlanetMap : MonoBehaviour
     }
 
     private void MarchCubes()
+    {
+        Marching.MarchingCubes(ref vertices, ref triangles, ref planetMap);
+        triangles.Reverse();
+        Mesh mesh = new Mesh
+        {
+            vertices = vertices.ToArray(),
+            indexFormat = UnityEngine.Rendering.IndexFormat.UInt32,
+            triangles = triangles.ToArray()
+        };
+        mesh.RecalculateNormals();
+
+        meshObject.GetComponent<MeshFilter>().mesh = mesh;
+    }
+
+   /* private void MarchCubesJob()
     {
         NativeArray<float3> verts = new NativeArray<float3>(Values.Instance.PlanetSize.x * Values.Instance.PlanetSize.y * Values.Instance.PlanetSize.z, Allocator.Persistent);
         NativeArray<int> triangs = new NativeArray<int>(Values.Instance.PlanetSize.x * Values.Instance.PlanetSize.y * Values.Instance.PlanetSize.z, Allocator.Persistent);
@@ -47,23 +65,22 @@ public class PlanetMap : MonoBehaviour
             }
         }
         NativeArray<int>.Copy(flattenedTriangulations, nativeTriangulations);
-        Marching marchJob = new Marching()
+        MarchingJob marchJob = new MarchingJob()
         {
             triangulations = nativeTriangulations,
             vertices = verts,
             triangles = triangs,
             edges = nativeEdges,
             corners = nativeCorners,
-            cube = cube,
             heightMap = pointVal,
             triangCounter = triangCounter,
             vertCounter = vertCounter
         };
 
-        JobHandle job = marchJob.Schedule(Values.Instance.PlanetSize.x * Values.Instance.PlanetSize.y * Values.Instance.PlanetSize.z, 6400);
+        JobHandle job = marchJob.Schedule(Values.Instance.PlanetSize.x * Values.Instance.PlanetSize.y * Values.Instance.PlanetSize.z, 64);
         job.Complete();
         Debug.Log(triangCounter[0]);
-        for(int i = 0; i < triangCounter[0]; i++)
+        for(int i = 0; i < triangCounter[0] - 1; i++)
         {
             vertices.Add(verts[i]);
             triangles.Add(triangs[i]);
@@ -82,7 +99,7 @@ public class PlanetMap : MonoBehaviour
         meshObject.AddComponent<MeshFilter>();
         meshObject.AddComponent<MeshRenderer>();
         meshObject.GetComponent<MeshFilter>().mesh = mesh;
-    }
+    }*/
 
     public static float Perlin3D(Vector3 pos, float scale) //Random Perlin3D noise function, will be changed later on
     {
@@ -129,7 +146,7 @@ public class PlanetMap : MonoBehaviour
 
         }
 
-        //pointVal.Dispose(); //Dispose of the native array to avoid memory leaks
+        pointVal.Dispose(); //Dispose of the native array to avoid memory leaks
 
     }
     [BurstCompile]
@@ -157,13 +174,14 @@ public class PlanetMap : MonoBehaviour
             float3 position = IndiceToPos(i); //Calculate points position in the world based on its index
             float distFromCentre = Vector3.Distance(centrePoint, position); //Calculate position's distance from centre
 
-            pointValues[i] = (distFromCentre - radius) + PlanetMap.Perlin3D(position, noiseScale); //Assign value to the point
+            pointValues[i] = (distFromCentre - radius) /*+ PlanetMap.Perlin3D(position, noiseScale)*/; //Assign value to the point
         }
+        
     }
 
     private void OnDrawGizmos()
     {
-        if (planetMap == null)
+        if (planetMap == null || Values.Instance.DrawPoints == false)
             return;
 
 

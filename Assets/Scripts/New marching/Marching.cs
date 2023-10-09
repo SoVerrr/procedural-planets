@@ -1,121 +1,93 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Unity.Jobs;
-using Unity.Collections;
 using Unity.Mathematics;
-using Unity.Burst;
 
-struct Marching : IJobParallelFor
+public class Marching : MonoBehaviour
 {
-    [ReadOnly] public NativeArray<float> heightMap;
-    [ReadOnly] public NativeArray<int> triangulations;
-    [ReadOnly] public NativeArray<int2> edges;
-    [ReadOnly] public NativeArray<int3> corners;
-    [NativeDisableParallelForRestriction] public NativeArray<float3> vertices;
-    [NativeDisableParallelForRestriction] public NativeArray<int> triangles;
-    [NativeDisableParallelForRestriction] public NativeArray<float> cube;
-    [NativeDisableParallelForRestriction] public NativeArray<int> triangCounter;
-    [NativeDisableParallelForRestriction] public NativeArray<int> vertCounter;
-    private int GetCubeConfig(NativeArray<float> cube) //Get configuration of the cube for the triangulation table
-    {
-        int configIdx = 0;
+    
 
-        for(int i = 0; i < 8; i++) //iterate through corners of the cube
+    private static int CubeConfig(float[] cube) // Get the index for the triangulation table
+    {
+        int config = 0;
+
+        for(int i = 0; i < 8; i++)
         {
-            if(cube[i] > Values.Instance.SurfaceLevel)
+            if(cube[i] < Values.Instance.SurfaceLevel)
             {
-                configIdx |= 1 << i; //OR gate inserts 1 at the index of a point higher than surface level by bitshifting
+                config |= 1 << i;
             }
         }
 
-        return configIdx;
-
+        return config;
     }
 
-    private int3 UnflattenIndex(int i) //Convert 1d index to a 3d index
+    private static Vector3 CalculateVertexPosition(Vector3 vertexA, Vector3 vertexB, ref float[,,] heightMap)
     {
-        int3 idx = new int3();
+        //Get values of the vertices
+        float valueA = heightMap[(int)vertexA.x, (int)vertexA.y, (int)vertexA.z];
+        float valueB = heightMap[(int)vertexB.x, (int)vertexB.y, (int)vertexB.z];
 
-        idx.z = i % Values.Instance.PlanetSize.z;
-        idx.y = (i / Values.Instance.PlanetSize.z) % Values.Instance.PlanetSize.y;
-        idx.x = (i / (Values.Instance.PlanetSize.y * Values.Instance.PlanetSize.z)) % Values.Instance.PlanetSize.x;
+        float t = (0 - valueA) / (valueB - valueA);
+        Vector3 vertexPosition = Vector3.Lerp(vertexA, vertexB, t);
 
-        return idx;
-    }
-    private int FlattenIndex(int3 position) //Convert 3d index to 1d index
-    {
-        if ((position.z * Values.Instance.PlanetSize.x * Values.Instance.PlanetSize.y) + (position.y * Values.Instance.PlanetSize.x) + position.x > 27000)
-            Debug.Log($"{(position.z * Values.Instance.PlanetSize.x * Values.Instance.PlanetSize.y) + (position.y * Values.Instance.PlanetSize.x) + position.x} || {position}");
-        return (position.z * Values.Instance.PlanetSize.x * Values.Instance.PlanetSize.y) + (position.y * Values.Instance.PlanetSize.x) + position.x;
+        return vertexPosition;
     }
 
-
-    public void Execute(int i)
+    private static void MarchCube(float[] cube, Vector3 position, ref List<Vector3> vertices, ref List<int> triangles, ref float[,,] heightMap)
     {
-        
+        int config = CubeConfig(cube);
 
-        int3 position = UnflattenIndex(i); //Assuming density of 1 for now
-        if (position.x < Values.Instance.PlanetSize.x - 1 && position.y < Values.Instance.PlanetSize.y - 1 && position.z < Values.Instance.PlanetSize.y - 1)
+        for (int i = 0; i < 15; i++) // Iterate through the triangulations from config
         {
+            int edgeIndex = Values.Instance.Triangulations[config, i]; // Get the index of the edge from triangulations table
+            if (edgeIndex == -1) //Break the loop if edge index equals to -1 because it means that there will be no more indices in this triangulation
+                break;
+            
+            
+            Vector3 vertexB = position + Values.Instance.Corners[Values.Instance.Edges[edgeIndex].y];
+            Vector3 vertexA = position + Values.Instance.Corners[Values.Instance.Edges[edgeIndex].x];
 
+            Vector3 edge = CalculateVertexPosition(vertexA, vertexB, ref heightMap); //TODO: interpolate the value to get smooth edges
 
-            #region corners
-            //Setting the values of the corners of the cube
-            cube[0] = heightMap[FlattenIndex(new int3(position.x + corners[0].x, position.y + corners[0].y, position.z + corners[0].z))];
-            cube[1] = heightMap[FlattenIndex(new int3(position.x + corners[1].x, position.y + corners[1].y, position.z + corners[1].z))];
-            cube[2] = heightMap[FlattenIndex(new int3(position.x + corners[2].x, position.y + corners[2].y, position.z + corners[2].z))];
-            cube[3] = heightMap[FlattenIndex(new int3(position.x + corners[3].x, position.y + corners[3].y, position.z + corners[3].z))];
-            cube[4] = heightMap[FlattenIndex(new int3(position.x + corners[4].x, position.y + corners[4].y, position.z + corners[4].z))];
-            cube[5] = heightMap[FlattenIndex(new int3(position.x + corners[5].x, position.y + corners[5].y, position.z + corners[5].z))];
-            cube[6] = heightMap[FlattenIndex(new int3(position.x + corners[6].x, position.y + corners[6].y, position.z + corners[6].z))];
-            cube[7] = heightMap[FlattenIndex(new int3(position.x + corners[7].x, position.y + corners[7].y, position.z + corners[7].z))];
-            #endregion
-            int cubeConfig = GetCubeConfig(cube);
-            if (cubeConfig == 0 || cubeConfig == 255) //Returns if cube config is 0 or 255 because the edge cases are just an empty or full cube so it wont have any triangles anyway
-                return;
-
-            for (int t = 0; t < 15; t++)
+            if (vertices.Contains(edge)) // If vertice already exists only add the index of it to triangles to achieve less vertices and smoother edges
             {
-                if (triangulations[cubeConfig + t] == -1) //If an indice index is equal to -1 it means that all the triangles for the case have been added
-                    break;
-                int edgeIndex = triangulations[cubeConfig + t];
+                int index = vertices.IndexOf(edge);
+                triangles.Add(index);
+            }
+            else // Otherwise add vertice to the list and its index to the triangles list
+            {
+                vertices.Add(edge);
+                triangles.Add(vertices.Count - 1);
+            }
+        }
 
-                float3 vectorA = new float3(position.x + corners[edges[edgeIndex].x].x, position.y + corners[edges[edgeIndex].x].y, position.z + corners[edges[edgeIndex].x].z);
-                float3 vectorB = new float3(position.x + corners[edges[edgeIndex].y].x, position.y + corners[edges[edgeIndex].y].y, position.z + corners[edges[edgeIndex].y].z);
+    }
 
-                float3 edge = (vectorA + vectorB) / 2; //TODO: interpolate the corners to get smooth edges
-
-                //Iterate through vertices to check if the vertice was already added and if it wasnt add it at the end
-                int verticeIndex = -999; //If the vetice was already added save its index to add it to triangles
-
-                vertices[vertCounter[0]] = edge;
-                triangles[triangCounter[0]] = triangCounter[0];
-                vertCounter[0]++;
-                triangCounter[0]++;
-
-
-               /* for (int p = 0; p < triangles.Length; p++)
+    public static void MarchingCubes(ref List<Vector3> vertices, ref List<int> triangles, ref float[,,] heightMap)
+    {
+        //Iterate thorugh the heightmap
+        for(int x = 0; x < Values.Instance.PlanetSize.x - 1; x++)
+        {
+            for(int y = 0; y < Values.Instance.PlanetSize.y - 1; y++)
+            {
+                for (int z = 0; z < Values.Instance.PlanetSize.z - 1; z++)
                 {
-                    if (vertices[p].Equals(edge)) //If vertice already exists set verticeIndex to its index
-                    {
-                        verticeIndex = p;
-                    }
-                    else if (p == vertCounter[0]) //If it reaches end of vertices without detecting a duplicate add a new one and add it to triangles
-                    {
-                        vertices[p] = edge;
-                        triangles[triangCounter[0]++] = p;
-                        vertCounter[0]++;
-                        break;
-                    }
-                    else if (p == triangCounter[0]) //If it reaches end of triangles add a duplicate vertex and its index to triangles
-                    {
-                        if (verticeIndex == -999)
-                            Debug.Log($"{edge} | {vertices[p]} | VertCount: {vertCounter[0]} | TriangCount: {triangCounter[0]} | P: {p}");
-                        triangles[triangCounter[0]] = verticeIndex;
-                        triangCounter[0]++;
-                    }
-                }*/
+                    
+                    #region cubeCorners
+                    //Set the values of cube corners by taking the heightMap value at the sum of original position and the corner values
+                    float[] cube = new float[8];
+                    cube[0] = heightMap[(int)Values.Instance.Corners[0].x + x, (int)Values.Instance.Corners[0].y + y, (int)Values.Instance.Corners[0].z + z];
+                    cube[1] = heightMap[(int)Values.Instance.Corners[1].x + x, (int)Values.Instance.Corners[1].y + y, (int)Values.Instance.Corners[1].z + z];
+                    cube[2] = heightMap[(int)Values.Instance.Corners[2].x + x, (int)Values.Instance.Corners[2].y + y, (int)Values.Instance.Corners[2].z + z];
+                    cube[3] = heightMap[(int)Values.Instance.Corners[3].x + x, (int)Values.Instance.Corners[3].y + y, (int)Values.Instance.Corners[3].z + z];
+                    cube[4] = heightMap[(int)Values.Instance.Corners[4].x + x, (int)Values.Instance.Corners[4].y + y, (int)Values.Instance.Corners[4].z + z];
+                    cube[5] = heightMap[(int)Values.Instance.Corners[5].x + x, (int)Values.Instance.Corners[5].y + y, (int)Values.Instance.Corners[5].z + z];
+                    cube[6] = heightMap[(int)Values.Instance.Corners[6].x + x, (int)Values.Instance.Corners[6].y + y, (int)Values.Instance.Corners[6].z + z];
+                    cube[7] = heightMap[(int)Values.Instance.Corners[7].x + x, (int)Values.Instance.Corners[7].y + y, (int)Values.Instance.Corners[7].z + z];
+                    #endregion
+                    MarchCube(cube, new Vector3(x, y, z), ref vertices, ref triangles, ref heightMap);
+                }
             }
         }
     }
