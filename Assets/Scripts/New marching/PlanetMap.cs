@@ -13,10 +13,10 @@ public class PlanetMap : MonoBehaviour
     List<int> triangles = new List<int>();
     NativeArray<float> pointVal;
     [SerializeField] GameObject meshObject;
-    private void Update()
+    /*private void Update()
     {
         GeneratePlanetMap(Values.Instance.PlanetSize, Values.Instance.Radius, Values.Instance.Density, ref planetMap);
-    }
+    }*/
 
     void Start()
     {
@@ -42,71 +42,71 @@ public class PlanetMap : MonoBehaviour
         mesh.RecalculateNormals();
 
         meshObject.GetComponent<MeshFilter>().mesh = mesh;
+        
     }
 
-   /* private void MarchCubesJob()
-    {
-        NativeArray<float3> verts = new NativeArray<float3>(Values.Instance.PlanetSize.x * Values.Instance.PlanetSize.y * Values.Instance.PlanetSize.z, Allocator.Persistent);
-        NativeArray<int> triangs = new NativeArray<int>(Values.Instance.PlanetSize.x * Values.Instance.PlanetSize.y * Values.Instance.PlanetSize.z, Allocator.Persistent);
-        NativeArray<int> triangCounter = new NativeArray<int>(1, Allocator.Persistent);
-        NativeArray<int> vertCounter = new NativeArray<int>(1, Allocator.Persistent);
-        NativeArray<int> nativeTriangulations = new NativeArray<int>(256 * 16, Allocator.Persistent);
-        NativeArray<int3> nativeCorners = new NativeArray<int3>(Values.Instance.Corners.Length, Allocator.Persistent);
-        NativeArray<int2> nativeEdges = new NativeArray<int2>(Values.Instance.Edges.Length, Allocator.Persistent);
-        NativeArray<float> cube = new NativeArray<float>(8, Allocator.Persistent);
-        NativeArray<int3>.Copy(Values.Instance.Corners, nativeCorners);
-        NativeArray<int2>.Copy(Values.Instance.Edges, nativeEdges);
-        int[] flattenedTriangulations = new int[256 * 16];
-        for (int x = 0; x < 256; x++) //loop to flatten the 2d triangulation array
-        {
-            for (int y = 0; y < 15; y++)
-            {
-                flattenedTriangulations[x * 15 + y] = Values.Instance.Triangulations[x, y];
-            }
-        }
-        NativeArray<int>.Copy(flattenedTriangulations, nativeTriangulations);
-        MarchingJob marchJob = new MarchingJob()
-        {
-            triangulations = nativeTriangulations,
-            vertices = verts,
-            triangles = triangs,
-            edges = nativeEdges,
-            corners = nativeCorners,
-            heightMap = pointVal,
-            triangCounter = triangCounter,
-            vertCounter = vertCounter
-        };
+    /* private void MarchCubesJob()
+     {
+         NativeArray<float3> verts = new NativeArray<float3>(Values.Instance.PlanetSize.x * Values.Instance.PlanetSize.y * Values.Instance.PlanetSize.z, Allocator.Persistent);
+         NativeArray<int> triangs = new NativeArray<int>(Values.Instance.PlanetSize.x * Values.Instance.PlanetSize.y * Values.Instance.PlanetSize.z, Allocator.Persistent);
+         NativeArray<int> triangCounter = new NativeArray<int>(1, Allocator.Persistent);
+         NativeArray<int> vertCounter = new NativeArray<int>(1, Allocator.Persistent);
+         NativeArray<int> nativeTriangulations = new NativeArray<int>(256 * 16, Allocator.Persistent);
+         NativeArray<int3> nativeCorners = new NativeArray<int3>(Values.Instance.Corners.Length, Allocator.Persistent);
+         NativeArray<int2> nativeEdges = new NativeArray<int2>(Values.Instance.Edges.Length, Allocator.Persistent);
+         NativeArray<float> cube = new NativeArray<float>(8, Allocator.Persistent);
+         NativeArray<int3>.Copy(Values.Instance.Corners, nativeCorners);
+         NativeArray<int2>.Copy(Values.Instance.Edges, nativeEdges);
+         int[] flattenedTriangulations = new int[256 * 16];
+         for (int x = 0; x < 256; x++) //loop to flatten the 2d triangulation array
+         {
+             for (int y = 0; y < 15; y++)
+             {
+                 flattenedTriangulations[x * 15 + y] = Values.Instance.Triangulations[x, y];
+             }
+         }
+         NativeArray<int>.Copy(flattenedTriangulations, nativeTriangulations);
+         MarchingJob marchJob = new MarchingJob()
+         {
+             triangulations = nativeTriangulations,
+             vertices = verts,
+             triangles = triangs,
+             edges = nativeEdges,
+             corners = nativeCorners,
+             heightMap = pointVal,
+             triangCounter = triangCounter,
+             vertCounter = vertCounter
+         };
 
-        JobHandle job = marchJob.Schedule(Values.Instance.PlanetSize.x * Values.Instance.PlanetSize.y * Values.Instance.PlanetSize.z, 64);
-        job.Complete();
-        Debug.Log(triangCounter[0]);
-        for(int i = 0; i < triangCounter[0] - 1; i++)
-        {
-            vertices.Add(verts[i]);
-            triangles.Add(triangs[i]);
-        }
+         JobHandle job = marchJob.Schedule(Values.Instance.PlanetSize.x * Values.Instance.PlanetSize.y * Values.Instance.PlanetSize.z, 64);
+         job.Complete();
+         Debug.Log(triangCounter[0]);
+         for(int i = 0; i < triangCounter[0] - 1; i++)
+         {
+             vertices.Add(verts[i]);
+             triangles.Add(triangs[i]);
+         }
 
-        Mesh mesh = new()
-        {
-            vertices = vertices.ToArray(),
-            indexFormat = UnityEngine.Rendering.IndexFormat.UInt32,
-            triangles = triangles.ToArray()
-        };
+         Mesh mesh = new()
+         {
+             vertices = vertices.ToArray(),
+             indexFormat = UnityEngine.Rendering.IndexFormat.UInt32,
+             triangles = triangles.ToArray()
+         };
 
-        mesh.RecalculateNormals();
+         mesh.RecalculateNormals();
 
-        GameObject meshObject = new GameObject($"Chunk");
-        meshObject.AddComponent<MeshFilter>();
-        meshObject.AddComponent<MeshRenderer>();
-        meshObject.GetComponent<MeshFilter>().mesh = mesh;
-    }*/
+         GameObject meshObject = new GameObject($"Chunk");
+         meshObject.AddComponent<MeshFilter>();
+         meshObject.AddComponent<MeshRenderer>();
+         meshObject.GetComponent<MeshFilter>().mesh = mesh;
+     }*/
 
-    public static float Perlin3D(Vector3 pos, float scale) //Random Perlin3D noise function, will be changed later on
+    public static float Perlin3D(Vector3 pos, float scale, float offsetX, float offsetY, float offsetZ)
     {
         pos = (Vector3.Normalize(pos) + Vector3.one) / 2;
-        pos.x *= scale;
-        pos.y *= scale;
-        pos.z *= scale;
+        
+        
         float AB = Mathf.PerlinNoise(pos.x, pos.y);
         float BC = Mathf.PerlinNoise(pos.y, pos.z);
         float AC = Mathf.PerlinNoise(pos.x, pos.z);
@@ -116,7 +116,23 @@ public class PlanetMap : MonoBehaviour
         float CA = Mathf.PerlinNoise(pos.x, pos.z);
 
         float ABC = AB + BC + AC + BA + CB + CA;
-        return ABC / 6;
+        return (ABC / 6);
+    }
+    //Frequency should be lower than 1 and lacunarity should be greater than 1
+    public static float GenerateNoise(Vector3 pos, int octaves, float persistance, float lacunarity, float noiseScale, float noiseHeightMultiplier)
+    {
+
+        float noiseHeight = 0;
+        float amplitude = noiseHeightMultiplier;
+        float frequency = 1;
+
+        for(int i = 0; i < octaves; i++)
+        {
+            noiseHeight += noise.snoise(pos / noiseScale * frequency) * amplitude;
+            amplitude *= persistance;
+            frequency *= lacunarity;
+        }
+        return noiseHeight;
     }
     private void GeneratePlanetMap(Vector3Int planetSize, int radius, int density, ref float[,,] map)
     {
@@ -158,7 +174,7 @@ public class PlanetMap : MonoBehaviour
         [ReadOnly] public float3 centrePoint;
         [ReadOnly] public float noiseScale;
         [WriteOnly] public NativeArray<float> pointValues;
-
+        
         private float3 IndiceToPos(int i) //Convert 1d index to a 3d position by calculating 3d indices and then dividing them by density
         {
             float3 pos = new float3();
@@ -173,12 +189,12 @@ public class PlanetMap : MonoBehaviour
         {
             float3 position = IndiceToPos(i); //Calculate points position in the world based on its index
             float distFromCentre = Vector3.Distance(centrePoint, position); //Calculate position's distance from centre
-
-            pointValues[i] = (distFromCentre - radius) /*+ PlanetMap.Perlin3D(position, noiseScale)*/; //Assign value to the point
+            float noise = GenerateNoise(position, Values.Instance.Octaves, Values.Instance.Persistance, Values.Instance.Lacunarity, Values.Instance.NoiseScale, Values.Instance.Amplitude);
+            pointValues[i] = (distFromCentre - radius) + noise; //Assign value to the point
         }
         
     }
-
+    
     private void OnDrawGizmos()
     {
         if (planetMap == null || Values.Instance.DrawPoints == false)

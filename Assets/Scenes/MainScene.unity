@@ -176,7 +176,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 10f7d9853e07bf641b356f55fde110d0, type: 2}
+  - {fileID: 2100000, guid: 94d32b829ddab8744852fac94be4177a, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -466,12 +466,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7a832cc2b2ed3b14688e58eb0a9d1919, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  surfaceLevel: 8.83
-  planetSize: {x: 200, y: 200, z: 200}
+  surfaceLevel: 9.83
+  planetSize: {x: 50, y: 50, z: 50}
   density: 1
-  radius: 14
-  noiseScale: 0.58
-  drawPoints: 1
+  radius: 12
+  drawPoints: 0
+  noiseScale: 14.5
+  lacunarity: 2.72
+  persistance: 0.67
+  octaves: 2
+  amplitude: 4
 --- !u!4 &1532947109
 Transform:
   m_ObjectHideFlags: 0

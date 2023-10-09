@@ -8,8 +8,12 @@ public class Values : MonoBehaviour //Singleton with values that are going to be
     [SerializeField] private Vector3Int planetSize; //x,y,z size of the planet grid
     [SerializeField] private int density; //how many sample points are between n and n+1
     [SerializeField] private int radius;
-    [SerializeField] private float noiseScale;
     [SerializeField] private bool drawPoints;
+    [SerializeField] private float noiseScale;
+    [SerializeField] private float lacunarity;
+    [SerializeField] private float persistance;
+    [SerializeField] private int octaves;
+    [SerializeField] private float amplitude;
     private Vector3[] corners = new Vector3[8]
    {
         new Vector3(0, 0, 0),
@@ -332,6 +336,22 @@ public class Values : MonoBehaviour //Singleton with values that are going to be
     public bool DrawPoints
     {
         get { return drawPoints; }
+    }
+    public float Lacunarity
+    {
+        get { return lacunarity; }
+    }
+    public float Persistance
+    {
+        get { return persistance; }
+    }
+    public int Octaves
+    {
+        get { return octaves; }
+    }
+    public float Amplitude
+    {
+        get { return amplitude; }
     }
     #endregion
 
