@@ -69,13 +69,15 @@ public class Marching : MonoBehaviour
         Vector3Int startpos = new Vector3Int(chunkID.x * xSize, chunkID.y * ySize, chunkID.z * zSize);
         Debug.Log(startpos);
         //Iterate thorugh the heightmap
-        for (int x = 0; x < xSize - 1; x++)
+        for (int x = 0; x < xSize; x++)
         {
-            for(int y = 0; y < ySize - 1; y++)
+            for(int y = 0; y < ySize; y++)
             {
-                for (int z = 0; z < zSize - 1; z++)
+                for (int z = 0; z < zSize; z++)
                 {
-                    Vector3Int pos = new Vector3Int(startpos.x + x, startpos.y + chunkID.y + y, startpos.z + z);
+                    Vector3Int pos = new Vector3Int(startpos.x + x, startpos.y + y, startpos.z + z);
+                    if (pos.x == Values.Instance.PlanetSize.x - 1|| pos.y == Values.Instance.PlanetSize.y - 1|| pos.z == Values.Instance.PlanetSize.z - 1)
+                        continue;
                     #region cubeCorners
                     //Set the values of cube corners by taking the heightMap value at the sum of original position and the corner values
                     float[] cube = new float[8];
@@ -88,7 +90,7 @@ public class Marching : MonoBehaviour
                     cube[6] = heightMap[(int)Values.Instance.Corners[6].x + pos.x, (int)Values.Instance.Corners[6].y + pos.y, (int)Values.Instance.Corners[6].z + pos.z];
                     cube[7] = heightMap[(int)Values.Instance.Corners[7].x + pos.x, (int)Values.Instance.Corners[7].y + pos.y, (int)Values.Instance.Corners[7].z + pos.z];
                     #endregion
-                    MarchCube(cube, new Vector3(x, y, z), ref vertices, ref triangles, ref heightMap);
+                    MarchCube(cube, pos, ref vertices, ref triangles, ref heightMap);
                 }
             }
         }
