@@ -467,9 +467,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   surfaceLevel: 9.83
-  planetSize: {x: 50, y: 50, z: 50}
+  planetSize: {x: 60, y: 60, z: 60}
+  chunkSize: {x: 10, y: 10, z: 10}
   density: 1
-  radius: 12
+  radius: 10
   drawPoints: 0
   noiseScale: 14.5
   lacunarity: 2.72

@@ -64,27 +64,29 @@ public class Marching : MonoBehaviour
 
     }
 
-    public static void MarchingCubes(ref List<Vector3> vertices, ref List<int> triangles, ref float[,,] heightMap)
+    public static void MarchingCubes(ref List<Vector3> vertices, ref List<int> triangles, ref float[,,] heightMap, int xSize, int ySize, int zSize, Vector3Int chunkID)
     {
+        Vector3Int startpos = new Vector3Int(chunkID.x * xSize, chunkID.y * ySize, chunkID.z * zSize);
+        Debug.Log(startpos);
         //Iterate thorugh the heightmap
-        for(int x = 0; x < Values.Instance.PlanetSize.x - 1; x++)
+        for (int x = 0; x < xSize - 1; x++)
         {
-            for(int y = 0; y < Values.Instance.PlanetSize.y - 1; y++)
+            for(int y = 0; y < ySize - 1; y++)
             {
-                for (int z = 0; z < Values.Instance.PlanetSize.z - 1; z++)
+                for (int z = 0; z < zSize - 1; z++)
                 {
-                    
+                    Vector3Int pos = new Vector3Int(startpos.x + x, startpos.y + chunkID.y + y, startpos.z + z);
                     #region cubeCorners
                     //Set the values of cube corners by taking the heightMap value at the sum of original position and the corner values
                     float[] cube = new float[8];
-                    cube[0] = heightMap[(int)Values.Instance.Corners[0].x + x, (int)Values.Instance.Corners[0].y + y, (int)Values.Instance.Corners[0].z + z];
-                    cube[1] = heightMap[(int)Values.Instance.Corners[1].x + x, (int)Values.Instance.Corners[1].y + y, (int)Values.Instance.Corners[1].z + z];
-                    cube[2] = heightMap[(int)Values.Instance.Corners[2].x + x, (int)Values.Instance.Corners[2].y + y, (int)Values.Instance.Corners[2].z + z];
-                    cube[3] = heightMap[(int)Values.Instance.Corners[3].x + x, (int)Values.Instance.Corners[3].y + y, (int)Values.Instance.Corners[3].z + z];
-                    cube[4] = heightMap[(int)Values.Instance.Corners[4].x + x, (int)Values.Instance.Corners[4].y + y, (int)Values.Instance.Corners[4].z + z];
-                    cube[5] = heightMap[(int)Values.Instance.Corners[5].x + x, (int)Values.Instance.Corners[5].y + y, (int)Values.Instance.Corners[5].z + z];
-                    cube[6] = heightMap[(int)Values.Instance.Corners[6].x + x, (int)Values.Instance.Corners[6].y + y, (int)Values.Instance.Corners[6].z + z];
-                    cube[7] = heightMap[(int)Values.Instance.Corners[7].x + x, (int)Values.Instance.Corners[7].y + y, (int)Values.Instance.Corners[7].z + z];
+                    cube[0] = heightMap[(int)Values.Instance.Corners[0].x + pos.x, (int)Values.Instance.Corners[0].y + pos.y, (int)Values.Instance.Corners[0].z + pos.z];
+                    cube[1] = heightMap[(int)Values.Instance.Corners[1].x + pos.x, (int)Values.Instance.Corners[1].y + pos.y, (int)Values.Instance.Corners[1].z + pos.z];
+                    cube[2] = heightMap[(int)Values.Instance.Corners[2].x + pos.x, (int)Values.Instance.Corners[2].y + pos.y, (int)Values.Instance.Corners[2].z + pos.z];
+                    cube[3] = heightMap[(int)Values.Instance.Corners[3].x + pos.x, (int)Values.Instance.Corners[3].y + pos.y, (int)Values.Instance.Corners[3].z + pos.z];
+                    cube[4] = heightMap[(int)Values.Instance.Corners[4].x + pos.x, (int)Values.Instance.Corners[4].y + pos.y, (int)Values.Instance.Corners[4].z + pos.z];
+                    cube[5] = heightMap[(int)Values.Instance.Corners[5].x + pos.x, (int)Values.Instance.Corners[5].y + pos.y, (int)Values.Instance.Corners[5].z + pos.z];
+                    cube[6] = heightMap[(int)Values.Instance.Corners[6].x + pos.x, (int)Values.Instance.Corners[6].y + pos.y, (int)Values.Instance.Corners[6].z + pos.z];
+                    cube[7] = heightMap[(int)Values.Instance.Corners[7].x + pos.x, (int)Values.Instance.Corners[7].y + pos.y, (int)Values.Instance.Corners[7].z + pos.z];
                     #endregion
                     MarchCube(cube, new Vector3(x, y, z), ref vertices, ref triangles, ref heightMap);
                 }

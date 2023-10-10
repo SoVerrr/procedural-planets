@@ -6,6 +6,7 @@ public class Values : MonoBehaviour //Singleton with values that are going to be
 {
     [SerializeField] private float surfaceLevel; //level at which the corner is on, should be between -1 and 1
     [SerializeField] private Vector3Int planetSize; //x,y,z size of the planet grid
+    [SerializeField] private Vector3Int chunkSize;
     [SerializeField] private int density; //how many sample points are between n and n+1
     [SerializeField] private int radius;
     [SerializeField] private bool drawPoints;
@@ -352,6 +353,10 @@ public class Values : MonoBehaviour //Singleton with values that are going to be
     public float Amplitude
     {
         get { return amplitude; }
+    }
+    public Vector3Int ChunkSize
+    {
+        get { return chunkSize; }
     }
     #endregion
 

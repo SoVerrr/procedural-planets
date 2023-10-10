@@ -13,6 +13,7 @@ public class PlanetMap : MonoBehaviour
     List<int> triangles = new List<int>();
     NativeArray<float> pointVal;
     [SerializeField] GameObject meshObject;
+    List<Chunk> chunks = new List<Chunk>();
     /*private void Update()
     {
         GeneratePlanetMap(Values.Instance.PlanetSize, Values.Instance.Radius, Values.Instance.Density, ref planetMap);
@@ -25,13 +26,25 @@ public class PlanetMap : MonoBehaviour
         planetMap = new float[Values.Instance.PlanetSize.x, Values.Instance.PlanetSize.y, Values.Instance.PlanetSize.z];
 
         GeneratePlanetMap(Values.Instance.PlanetSize, Values.Instance.Radius, Values.Instance.Density, ref planetMap);
-        MarchCubes();
+
+        for (int x = 0; x < Values.Instance.PlanetSize.x / Values.Instance.ChunkSize.x; x++)
+        {
+            for (int y = 0; y < Values.Instance.PlanetSize.y / Values.Instance.ChunkSize.y; y++)
+            {
+                for (int z = 0; z < Values.Instance.PlanetSize.z / Values.Instance.ChunkSize.z; z++)
+                {
+                    chunks.Add(new Chunk(planetMap, new Vector3Int(x, y, z)));
+                }
+            }
+        }
+
+        /*Chunk chunk0 = new Chunk(planetMap, new Vector3Int(0,0,0));*/
 
     }
 
     private void MarchCubes()
     {
-        Marching.MarchingCubes(ref vertices, ref triangles, ref planetMap);
+        Marching.MarchingCubes(ref vertices, ref triangles, ref planetMap, Values.Instance.PlanetSize.x, Values.Instance.PlanetSize.y, Values.Instance.PlanetSize.z, new Vector3Int(0,0,0));
         triangles.Reverse();
         Mesh mesh = new Mesh
         {
@@ -119,18 +132,18 @@ public class PlanetMap : MonoBehaviour
         return (ABC / 6);
     }
     //Frequency should be lower than 1 and lacunarity should be greater than 1
-    public static float GenerateNoise(Vector3 pos, int octaves, float persistance, float lacunarity, float noiseScale, float noiseHeightMultiplier)
+    public static float SamplePoint(Vector3 pos)
     {
 
         float noiseHeight = 0;
-        float amplitude = noiseHeightMultiplier;
+        float amplitude = Values.Instance.Amplitude;
         float frequency = 1;
 
-        for(int i = 0; i < octaves; i++)
+        for(int i = 0; i < Values.Instance.Octaves; i++)
         {
-            noiseHeight += noise.snoise(pos / noiseScale * frequency) * amplitude;
-            amplitude *= persistance;
-            frequency *= lacunarity;
+            noiseHeight += noise.snoise(pos / Values.Instance.NoiseScale * frequency) * amplitude;
+            amplitude *= Values.Instance.Persistance;
+            frequency *= Values.Instance.Lacunarity;
         }
         return noiseHeight;
     }
@@ -189,7 +202,7 @@ public class PlanetMap : MonoBehaviour
         {
             float3 position = IndiceToPos(i); //Calculate points position in the world based on its index
             float distFromCentre = Vector3.Distance(centrePoint, position); //Calculate position's distance from centre
-            float noise = GenerateNoise(position, Values.Instance.Octaves, Values.Instance.Persistance, Values.Instance.Lacunarity, Values.Instance.NoiseScale, Values.Instance.Amplitude);
+            float noise = SamplePoint(position);
             pointValues[i] = (distFromCentre - radius) + noise; //Assign value to the point
         }
         
