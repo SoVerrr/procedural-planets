@@ -37,8 +37,17 @@ public class PlanetMap : MonoBehaviour
                 }
             }
         }
-
+        CreateOcean();
         /*Chunk chunk0 = new Chunk(planetMap, new Vector3Int(0,0,0));*/
+
+    }
+
+    private void CreateOcean() //Generate a blue sphere primitive with radius of the planet in the centre point
+    {
+        GameObject ocean = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        ocean.transform.localScale = new Vector3(Values.Instance.Radius, Values.Instance.Radius, Values.Instance.Radius) * 2;
+        ocean.transform.position = new Vector3(Values.Instance.PlanetSize.x / 2, Values.Instance.PlanetSize.y / 2, Values.Instance.PlanetSize.z / 2);
+        ocean.GetComponent<Renderer>().material.color = Color.blue;
 
     }
 
