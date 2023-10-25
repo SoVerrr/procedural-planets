@@ -21,8 +21,8 @@ public class PlanetMap : MonoBehaviour
 
     void Start()
     {
-        
 
+        GameObject Chunks = new GameObject("Chunks");
         planetMap = new float[Values.Instance.PlanetSize.x, Values.Instance.PlanetSize.y, Values.Instance.PlanetSize.z];
 
         GeneratePlanetMap(Values.Instance.PlanetSize, Values.Instance.Radius, Values.Instance.Density, ref planetMap);
@@ -33,7 +33,7 @@ public class PlanetMap : MonoBehaviour
             {
                 for (int z = 0; z < Values.Instance.PlanetSize.z / Values.Instance.ChunkSize.z; z++)
                 {
-                    chunks.Add(new Chunk(planetMap, new Vector3Int(x, y, z)));
+                    chunks.Add(new Chunk(planetMap, new Vector3Int(x, y, z), Chunks));
                 }
             }
         }

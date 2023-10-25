@@ -7,7 +7,7 @@ public class Chunk
     private Vector3Int chunkSize;
 
 
-    public Chunk(float[,,] heightMap, Vector3Int chunkID)
+    public Chunk(float[,,] heightMap, Vector3Int chunkID, GameObject parent)
     {
         chunkSize = Values.Instance.ChunkSize;
 
@@ -30,6 +30,8 @@ public class Chunk
 
         meshObject.GetComponent<MeshFilter>().mesh = mesh;
         meshObject.GetComponent<MeshRenderer>().material = Resources.Load<Material>("Materials/Planet");
+        meshObject.transform.parent = parent.transform;
+        meshObject.AddComponent<MeshCollider>();
     }
 
 
