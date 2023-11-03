@@ -47,7 +47,8 @@ public class PlanetMap : MonoBehaviour
         GameObject ocean = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         ocean.transform.localScale = new Vector3(Values.Instance.Radius, Values.Instance.Radius, Values.Instance.Radius) * 2;
         ocean.transform.position = new Vector3(Values.Instance.PlanetSize.x / 2, Values.Instance.PlanetSize.y / 2, Values.Instance.PlanetSize.z / 2);
-        ocean.GetComponent<Renderer>().material.color = Color.blue;
+        ocean.GetComponent<Renderer>().material.shader = Resources.Load<Shader>("Shaders/TestShader");
+        ocean.GetComponent<Renderer>().material.mainTexture = Resources.Load<Texture>("Textures/Water Texture");
 
     }
 
