@@ -6,13 +6,15 @@ public class PlayerController : MonoBehaviour
 {
     [SerializeField] private float speed;
     [SerializeField] private float gravityForce;
+    [SerializeField] private float camSpeed;
     [SerializeField] private ForceMode forceMode;
-
+    [SerializeField] Camera mainCam;
     private Rigidbody rigidbody;
 
     private void Awake()
     {
         rigidbody = GetComponent<Rigidbody>();
+        Cursor.lockState = CursorLockMode.Locked;
     }
 
     private void Gravity()
@@ -25,9 +27,19 @@ public class PlayerController : MonoBehaviour
         transform.rotation = Quaternion.FromToRotation(localUp, gravityUp) * rigidbody.rotation;
     }
 
+    private void RotateCamera()
+    {
+        float camX = camSpeed * Input.GetAxis("Mouse X");
+        float camY = camSpeed * Input.GetAxis("Mouse Y");
+
+        Vector3 rotateValue = new Vector3(camY, -camX, 0);
+        mainCam.transform.eulerAngles = mainCam.transform.eulerAngles - rotateValue; 
+    }
+
     private void Update()
     {
         Gravity();
+        RotateCamera();
     }
 
 }
