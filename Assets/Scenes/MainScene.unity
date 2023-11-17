@@ -630,8 +630,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   speed: 0
-  gravityForce: 0.1
-  forceMode: 0
+  gravityForce: 50
+  camSpeed: 200
+  moveSpeed: 10
+  mainCam: {fileID: 963194227}
 --- !u!4 &1780482830
 Transform:
   m_ObjectHideFlags: 0
