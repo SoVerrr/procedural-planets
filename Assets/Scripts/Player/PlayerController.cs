@@ -8,11 +8,10 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float gravityForce;
     [SerializeField] private float camSpeed;
     [SerializeField] private float moveSpeed;
-    [SerializeField] Camera mainCam;
+    [SerializeField] private Camera cam;
     Rigidbody rigidbody;
 
-    float yRotation = 0;
-    float xRotation = 0;
+
 
     float horizontalInput;
     float verticalInput;
@@ -43,28 +42,32 @@ public class PlayerController : MonoBehaviour
 
     private void MovePlayer()
     {
-        moveDirection = new Vector3(horizontalInput, 0, verticalInput);
+        moveDirection = transform.right * horizontalInput + transform.forward * verticalInput;
         rigidbody.AddForce(moveDirection.normalized * moveSpeed * 10f, ForceMode.Force);
     }
 
-    private void RotateCamera()
+    private Vector3Int CastEditRay() //Returns chunkID if it hits a chunk or a Vector3Int of -1 -1 -1 if it doesnt
     {
-        float camX = camSpeed * Input.GetAxis("Mouse X") * Time.deltaTime;
-        float camY = camSpeed * Input.GetAxis("Mouse Y") * Time.deltaTime;
+        RaycastHit hit = new RaycastHit();
 
-        yRotation += camX;
-        xRotation -= camY;
+        if(Physics.Raycast(transform.position, transform.forward, out hit))
+        {
+            Chunk hitTest = hit.transform.GetComponent<Chunk>();
+            if (hitTest != null)
+                return hit.transform.GetComponent<Chunk>().chunkID;
+        }
 
-        xRotation = Mathf.Clamp(xRotation, -90f, 90f);
-
-        mainCam.transform.rotation = Quaternion.Euler(transform.rotation.x + xRotation, yRotation, 0);
+        return new Vector3Int(-1, -1, -1);
     }
 
     private void Update()
     {
-        Gravity();
-        RotateCamera();
+        //Gravity();
         GetInput();
+        transform.rotation = cam.transform.rotation;
+        Vector3Int chunkID = CastEditRay();
+        Debug.Log("hit chunk " + chunkID);
+
     }
 
     private void FixedUpdate()

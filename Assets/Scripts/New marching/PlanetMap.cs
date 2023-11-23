@@ -13,7 +13,7 @@ public class PlanetMap : MonoBehaviour
     List<int> triangles = new List<int>();
     NativeArray<float> pointVal;
     [SerializeField] GameObject meshObject;
-    List<Chunk> chunks = new List<Chunk>();
+    public static List<Chunk> chunks = new List<Chunk>();
     /*private void Update()
     {
         GeneratePlanetMap(Values.Instance.PlanetSize, Values.Instance.Radius, Values.Instance.Density, ref planetMap);
