@@ -5,7 +5,6 @@ using UnityEngine;
 public class Chunk
 {
     private Vector3Int chunkSize;
-    public Vector3Int chunkID;
 
     public Chunk(float[,,] heightMap, Vector3Int chunkID, GameObject parent)
     {
@@ -13,7 +12,6 @@ public class Chunk
 
         List<Vector3> vertices = new List<Vector3>();
         List<int> triangles = new List<int>();
-        this.chunkID = chunkID;
         Marching.MarchingCubes(ref vertices, ref triangles, ref heightMap, chunkSize.x, chunkSize.y, chunkSize.z, chunkID);
         triangles.Reverse();
         Mesh mesh = new Mesh
@@ -27,16 +25,13 @@ public class Chunk
         GameObject meshObject = new GameObject($"Chunk {chunkID}");
         meshObject.AddComponent<MeshFilter>();
         meshObject.AddComponent<MeshRenderer>();
-
         meshObject.GetComponent<MeshFilter>().mesh = mesh;
         meshObject.GetComponent<MeshRenderer>().material = Resources.Load<Material>("Materials/Planet");
         meshObject.transform.parent = parent.transform;
         meshObject.AddComponent<MeshCollider>();
-    }
 
-    public void EditChunk()
-    {
-        
-    }
+        ChunkData data = meshObject.AddComponent<ChunkData>();
+        data.chunkID = chunkID;
 
+    }
 }

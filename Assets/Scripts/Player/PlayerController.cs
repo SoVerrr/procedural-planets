@@ -20,6 +20,7 @@ public class PlayerController : MonoBehaviour
     private void Awake()
     {
         rigidbody = GetComponent<Rigidbody>();
+        rigidbody.freezeRotation = true;
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
     }
@@ -46,18 +47,22 @@ public class PlayerController : MonoBehaviour
         rigidbody.AddForce(moveDirection.normalized * moveSpeed * 10f, ForceMode.Force);
     }
 
-    private Vector3Int CastEditRay() //Returns chunkID if it hits a chunk or a Vector3Int of -1 -1 -1 if it doesnt
+    private ChunkData CastEditRay(ref Vector3Int hitPosition) //Returns chunkID if it hits a chunk or a Vector3Int of -1 -1 -1 if it doesnt
     {
         RaycastHit hit = new RaycastHit();
 
         if(Physics.Raycast(transform.position, transform.forward, out hit))
         {
-            Chunk hitTest = hit.transform.GetComponent<Chunk>();
+            ChunkData hitTest = hit.transform.GetComponent<ChunkData>();
+            
+            hitPosition = Vector3Int.RoundToInt(hit.point);
+            
+
             if (hitTest != null)
-                return hit.transform.GetComponent<Chunk>().chunkID;
+                return hit.transform.GetComponent<ChunkData>();
         }
 
-        return new Vector3Int(-1, -1, -1);
+        return null;
     }
 
     private void Update()
@@ -65,8 +70,27 @@ public class PlayerController : MonoBehaviour
         //Gravity();
         GetInput();
         transform.rotation = cam.transform.rotation;
-        Vector3Int chunkID = CastEditRay();
-        Debug.Log("hit chunk " + chunkID);
+
+        if (Input.GetMouseButtonDown(0))
+        {
+
+            Vector3Int hitPosition = new Vector3Int();
+            ChunkData chunk = CastEditRay(ref hitPosition);
+
+            PlanetMap.planetMap[hitPosition.x, hitPosition.y, hitPosition.z] -= 10;
+            Debug.Log($"HitPos: {hitPosition} | Value after: ");
+            chunk.EditChunk();
+        }
+        if (Input.GetMouseButtonDown(1))
+        {
+
+            Vector3Int hitPosition = new Vector3Int();
+            ChunkData chunk = CastEditRay(ref hitPosition);
+
+            PlanetMap.planetMap[hitPosition.x, hitPosition.y, hitPosition.z] += 10;
+            Debug.Log($"HitPos: {hitPosition} | Value after: ");
+            chunk.EditChunk();
+        }
 
     }
 
