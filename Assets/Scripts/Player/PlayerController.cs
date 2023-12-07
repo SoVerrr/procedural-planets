@@ -78,7 +78,30 @@ public class PlayerController : MonoBehaviour
             ChunkData chunk = CastEditRay(ref hitPosition);
 
             PlanetMap.planetMap[hitPosition.x, hitPosition.y, hitPosition.z] -= 10;
-            Debug.Log($"HitPos: {hitPosition} | Value after: ");
+            Vector3Int chunkSize = Values.Instance.ChunkSize;
+            Vector3Int startpos = new Vector3Int(chunk.chunkID.x * chunkSize.x, chunk.chunkID.y * chunkSize.y, chunk.chunkID.z * chunkSize.z);
+            Vector3Int chunkMax = new Vector3Int(0, 0, 0); //keeps hold if the edited point is on the edge of the chunk 
+            if (hitPosition.x + startpos.x >= chunkMax.x + startpos.x)
+                chunkMax.x = 1;
+            if (hitPosition.y + startpos.y >= chunkMax.y + startpos.y)
+                chunkMax.y = 1;
+            if (hitPosition.z + startpos.y >= chunkMax.y + startpos.y)
+                chunkMax.z = 1;
+
+            int chunkMaxSum = chunkMax.x + chunkMax.y + chunkMax.z;
+
+            if (chunkMaxSum == 1)
+                PlanetMap.GetChunk(chunkMax + chunk.chunkID).EditChunk();
+            else if (chunkMaxSum != 0)
+            {
+                PlanetMap.GetChunk(chunkMax + chunk.chunkID).EditChunk();
+                if (chunkMax.x == 1)
+                    PlanetMap.GetChunk(new Vector3Int(1, 0, 0) + chunk.chunkID).EditChunk();
+                if (chunkMax.y == 1)
+                    PlanetMap.GetChunk(new Vector3Int(0, 1, 0) + chunk.chunkID).EditChunk();
+                if (chunkMax.z == 1)
+                    PlanetMap.GetChunk(new Vector3Int(1, 0, 1) + chunk.chunkID).EditChunk();
+            }
             chunk.EditChunk();
         }
         if (Input.GetMouseButtonDown(1))
@@ -86,9 +109,32 @@ public class PlayerController : MonoBehaviour
 
             Vector3Int hitPosition = new Vector3Int();
             ChunkData chunk = CastEditRay(ref hitPosition);
-
             PlanetMap.planetMap[hitPosition.x, hitPosition.y, hitPosition.z] += 10;
-            Debug.Log($"HitPos: {hitPosition} | Value after: ");
+            Vector3Int chunkSize = Values.Instance.ChunkSize;
+            Vector3Int startpos = new Vector3Int(chunk.chunkID.x * chunkSize.x, chunk.chunkID.y * chunkSize.y, chunk.chunkID.z * chunkSize.z);
+            Vector3Int chunkMax = new Vector3Int(0, 0, 0); //keeps hold if the edited point is on the edge of the chunk 
+            if (hitPosition.x + startpos.x >= chunkMax.x + startpos.x)
+                chunkMax.x = 1;
+            if (hitPosition.y + startpos.y >= chunkMax.y + startpos.y)
+                chunkMax.y = 1;
+            if (hitPosition.z + startpos.y >= chunkMax.y + startpos.y)
+                chunkMax.z = 1;
+
+            int chunkMaxSum = chunkMax.x + chunkMax.y + chunkMax.z;
+
+            if (chunkMaxSum == 1)
+                PlanetMap.GetChunk(chunkMax + chunk.chunkID).EditChunk();
+            else if(chunkMaxSum != 0)
+            {
+                PlanetMap.GetChunk(chunkMax + chunk.chunkID).EditChunk();
+                if(chunkMax.x == 1)
+                    PlanetMap.GetChunk(new Vector3Int(1, 0, 0) + chunk.chunkID).EditChunk();
+                if (chunkMax.y == 1)
+                    PlanetMap.GetChunk(new Vector3Int(0, 1, 0) + chunk.chunkID).EditChunk();
+                if (chunkMax.z == 1)
+                    PlanetMap.GetChunk(new Vector3Int(1, 0, 1) + chunk.chunkID).EditChunk();
+            }
+
             chunk.EditChunk();
         }
 

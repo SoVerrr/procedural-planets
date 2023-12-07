@@ -42,6 +42,16 @@ public class PlanetMap : MonoBehaviour
 
     }
 
+    static public ChunkData GetChunk(Vector3Int chunkID) //Returns the chunk with the given chunkID
+    {
+        foreach(var chunk in chunks)
+        {
+            if (chunk.cData.chunkID == chunkID)
+                return chunk.cData;
+        }
+        return null;
+    }
+
     private void CreateOcean() //Generate a blue sphere primitive with radius of the planet in the centre point
     {
         GameObject ocean = GameObject.CreatePrimitive(PrimitiveType.Sphere);

@@ -5,6 +5,7 @@ using UnityEngine;
 public class Chunk
 {
     private Vector3Int chunkSize;
+    public ChunkData cData;
 
     public Chunk(float[,,] heightMap, Vector3Int chunkID, GameObject parent)
     {
@@ -32,6 +33,7 @@ public class Chunk
 
         ChunkData data = meshObject.AddComponent<ChunkData>();
         data.chunkID = chunkID;
+        cData = data;
 
     }
 }
