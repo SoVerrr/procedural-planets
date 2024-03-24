@@ -1,5 +1,6 @@
 # procedural-planets
  Engeenering thesis project. Procedural generation of planets using marching cubes and perlin noise with unity DOTS
+ 
  Represantation of the planet's heightmap:
 
 ![planet_heightmap](https://github.com/SoVerrr/procedural-planets/assets/82769474/d075b2d0-b58e-4edc-a296-dd0426f29da2)
